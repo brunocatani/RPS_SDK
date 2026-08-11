@@ -1,0 +1,7 @@
+/build/
+/build-fast/
+/build-tests/
+/.vs/
+/out/
+*.user
+*.suo
