@@ -5,13 +5,13 @@ mod stack. Each provider owns one directory under `SDK/`, allowing independent
 headers, documentation, buildable consumers, and contract tests to coexist
 without coupling the SDK release history to a runtime plugin repository.
 
-The initial module is `SDK/ROCK`. It contains:
+Published modules are `SDK/ROCK` and `SDK/PAPER`. Together they contain:
 
-- the complete V1 public headers;
-- the 90-slot API reference and lifecycle documentation;
+- the complete provider V1 public headers;
+- complete slot, type, capability, and lifecycle documentation;
 - focused integration recipes;
-- a shared FO4VR/F4SE example runtime;
-- 17 buildable generic example plugins;
+- provider-local FO4VR/F4SE example runtimes;
+- 29 buildable generic example plugins;
 - a configure-time FO4VR loader compatibility gate.
 
 Runtime project names used to derive behavior are intentionally absent from the
@@ -23,7 +23,11 @@ can adopt.
 ```text
 RPS_SDK/
 ├── SDK/
-│   └── ROCK/
+│   ├── ROCK/
+│   │   ├── include/
+│   │   ├── docs/
+│   │   └── examples/
+│   └── PAPER/
 │       ├── include/
 │       ├── docs/
 │       └── examples/
@@ -32,7 +36,10 @@ RPS_SDK/
 └── CMakePresets.json
 ```
 
-Future public SDK modules should use the same `SDK/<PROVIDER>/` boundary.
+Consumers may add this repository with `add_subdirectory()` and link the
+header-only `RPS::ROCK`, `RPS::PAPER`, or aggregate `RPS::SDK` interface target.
+Installed packages expose the same targets through
+`find_package(RPS_SDK CONFIG REQUIRED)`.
 
 ## Validate
 
@@ -43,7 +50,7 @@ discovers the sibling CommonLibF4VR checkout automatically; elsewhere, pass
 
 ```powershell
 cmake --preset custom-fast
-cmake --build --preset custom-fast --target ROCKSDKExamplePlugins -- /m:1 /p:CL_MPCount=2
+cmake --build --preset custom-fast --target RPSSDKExamplePlugins -- /m:1 /p:CL_MPCount=2
 ctest --preset custom-fast -j 4
 ```
 

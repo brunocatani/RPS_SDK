@@ -12,6 +12,7 @@
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>",
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /external:anglebrackets /external:W0",
         "RPS_SDK_BUILD_ROCK_EXAMPLES": true,
+        "RPS_SDK_BUILD_PAPER_EXAMPLES": true,
         "RPS_SDK_ENABLE_TESTS": true,
         "VCPKG_TARGET_TRIPLET": "x64-windows-static"
       }
