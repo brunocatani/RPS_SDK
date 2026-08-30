@@ -1,6 +1,6 @@
 # V1 function table index
 
-`RockProviderApi` is append-only. The x64 V1 table currently contains 90 function pointers (720 bytes). Slot order is ABI and is mechanically checked against this document.
+`RockProviderApi` is append-only. The x64 V1 table currently contains 93 function pointers (744 bytes). Slot order is ABI and is mechanically checked against this document.
 
 The signature, enum values, structure defaults, flags, and inline support helpers in `ROCKProviderApi.h` are normative. This index explains intent and the principal gate; it does not replace the header.
 
@@ -96,6 +96,9 @@ The signature, enum values, structure defaults, flags, and inline support helper
 | 87 | `queryWorldRaycastV1` | Perform a bounded provider-filtered game-thread world raycast. |
 | 88 | `setColliderVisualizationOverrideV1` | Focus overlay visualization on one current weapon body. |
 | 89 | `clearColliderVisualizationOverrideV1` | Clear the caller's collider visualization focus. |
+| 90 | `getLogicalInputActionStateV1` | Read sequence-bearing semantic input state, currently the configured logical Jump action. |
+| 91 | `getPlayerControllerStateV1` | Read a pointer-free native player-controller snapshot with optional bounded penetration checking. |
+| 92 | `requestPlayerControllerJumpV1` | Request a generation-bound native controller jump after ROCK validates lifecycle and penetration state. |
 
 ## Exports
 

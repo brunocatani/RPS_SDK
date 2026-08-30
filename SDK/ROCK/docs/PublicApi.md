@@ -6,7 +6,7 @@ ROCK exposes one append-only V1 provider table from `ROCK.dll`. Its purpose is t
 
 ### Runtime and hand state
 
-Coherent frame/lifecycle snapshots; primary/offhand identity; physics and presented hand frames; interaction phase/target/held-body state; provider event cursors; raw wand state; input suppression state; semantic hand contacts; generated player collider descriptors; and hand collision availability.
+Coherent frame/lifecycle snapshots; primary/offhand identity; physics and presented hand frames; interaction phase/target/held-body state; provider event cursors; raw wand state; semantic Jump state; input suppression state; semantic hand contacts; generated player collider descriptors; hand collision availability; and a pointer-free native player-controller snapshot.
 
 ### Weapon state
 
@@ -26,7 +26,7 @@ Native animation authority, animation phase callbacks, native animation runtime 
 
 ### Touch mechanisms and world queries
 
-Scoped fixed-anchor, limited-hinge, and limited-prismatic touch targets support climbable surfaces and physical controls. Owner-callback-only world raycasts provide a bounded provider-filtered query path.
+Scoped fixed-anchor, limited-hinge, and limited-prismatic touch targets support climbable surfaces and physical controls. Owner-callback-only world raycasts provide a bounded provider-filtered query path. A separate guarded request enters FO4VR's native player jump state only after ROCK validates controller identity, lifecycle, generations, and current penetration.
 
 ## Discovery model
 

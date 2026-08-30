@@ -4,7 +4,7 @@ Minimum provider mod version represented by this SDK snapshot: `0.5.0`.
 
 | API | Status | Binary contract | Current surface |
 | --- | --- | --- | --- |
-| V1 | Current | Append-only, 90 x64 function pointers / 720 bytes | Complete public hand, weapon, contact, input, animation, authority, command, scoped publication, touch-grab, raycast, and diagnostic surface. |
+| V1 | Current | Append-only, 93 x64 function pointers / 744 bytes | Complete public hand, weapon, contact, input, animation, authority, command, scoped publication, touch-grab, raycast, guarded player-controller, and diagnostic surface. |
 
 ## Compatibility rules
 

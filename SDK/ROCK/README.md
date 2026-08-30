@@ -2,14 +2,14 @@
 
 ROCK SDK V1 is the public in-process C++ ABI for FO4VR F4SE plugins that need coherent access to ROCK's hand, collision, weapon, input, animation, interaction, and diagnostic systems.
 
-The current append-only V1 table contains 90 function slots. It supports read-only observation, owner-scoped registration, queued interaction commands, bounded control authorities, scoped publications, semantic contact streams, touch mechanisms, raycasts, and shared VR diagnostics without exposing private ROCK runtime classes.
+The current append-only V1 table contains 93 function slots. It supports read-only observation, owner-scoped registration, queued interaction commands, bounded control authorities, scoped publications, semantic contact streams, touch mechanisms, raycasts, guarded player-controller access, and shared VR diagnostics without exposing private ROCK runtime classes.
 
 ## Start here
 
 1. Read `docs/GettingStarted.md` and integrate `include/ROCKProviderApi.h`.
 2. Read `docs/RuntimeContract.md` before calling any frame-sensitive or stateful surface.
 3. Choose only the capabilities your mod needs from `docs/DiscoveryAndCapabilities.md`.
-4. Use `docs/ApiIndex.md` for the exact 90-slot map and `docs/FeatureGuide.md` for task-oriented guidance.
+4. Use `docs/ApiIndex.md` for the exact 93-slot map and `docs/FeatureGuide.md` for task-oriented guidance.
 5. Build or adapt one of the generic plugins under `examples/`.
 
 ## Package map
@@ -21,7 +21,7 @@ The current append-only V1 table contains 90 function slots. It supports read-on
 | `docs/PublicApi.md` | Architectural overview and API-family map. |
 | `docs/GettingStarted.md` | Initialization, result codes, registration, callbacks, and teardown. |
 | `docs/RuntimeContract.md` | Threading, lifecycle, generation, pointer, lease, cursor, and command rules. |
-| `docs/DiscoveryAndCapabilities.md` | Descriptor, table extent, 27 capabilities, 62 feature bits, and limits. |
+| `docs/DiscoveryAndCapabilities.md` | Descriptor, table extent, 28 capabilities, 62 feature bits, and limits. |
 | `docs/ApiIndex.md` | Every V1 function pointer in ABI slot order. |
 | `docs/FeatureGuide.md` | What users can build with each subsystem. |
 | `docs/Recipes.md` | Focused call patterns for common integrations. |

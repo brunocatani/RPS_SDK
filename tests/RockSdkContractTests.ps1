@@ -108,8 +108,8 @@ if ((Test-Path -LiteralPath $headerPath) -and
             $apiIndexText,
             '(?m)^\|\s*(\d+)\s*\|\s*`([A-Za-z_][A-Za-z0-9_]*)`\s*\|'))
 
-    if ($headerFunctions.Count -ne 90) {
-        $failures.Add("Expected the V1 header to expose 90 function slots; found $($headerFunctions.Count)")
+    if ($headerFunctions.Count -ne 93) {
+        $failures.Add("Expected the V1 header to expose 93 function slots; found $($headerFunctions.Count)")
     }
     if ($documentedRows.Count -ne $headerFunctions.Count) {
         $failures.Add("API index documents $($documentedRows.Count) slots; header exposes $($headerFunctions.Count)")
@@ -139,7 +139,7 @@ if (Test-Path -LiteralPath $capabilitiesPath) {
         'ExternalBodyScopes', 'WeaponPartObservability', 'WeaponComposition',
         'PoseReadback', 'SemanticHandContacts', 'PlayerColliderDescriptors',
         'ScopeSightState', 'InputObservability', 'TouchGrabTargets',
-        'WorldRaycasts', 'ColliderVisualizationOverride')
+        'WorldRaycasts', 'ColliderVisualizationOverride', 'PlayerController')
     foreach ($capability in $requiredCapabilities) {
         if ($capabilitiesText -notmatch [regex]::Escape("``$capability``")) {
             $failures.Add("Capability documentation is missing '$capability'")

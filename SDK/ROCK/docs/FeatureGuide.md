@@ -38,6 +38,8 @@ Hand input suppression and offhand reservation are owner-scoped leases. Publish 
 
 Raw wand state exposes sample metadata so a consumer can distinguish current input from stale/unavailable input. Native Pip-Boy/VATS/V.A.N.S. suppression remains explicit and separately feature-gated.
 
+`getLogicalInputActionStateV1` observes the configured semantic `Jump` action and exposes sample/press sequences. Consumers should edge-detect `pressSequence`, ignore unavailable samples, and prime their cursor after lifecycle blocking so input generated in a menu is not replayed as gameplay.
+
 ## Drive animation and presentation
 
 Native animation authority, phase callbacks, runtime publication, hand visual authority, presented pose readback, and handling authority form a coordinated animation surface. Acquire the narrow authority first, write only under `VisualWriteAllowed`, use generation guards, and deterministically clear every authority/publication.
@@ -55,6 +57,8 @@ Touch-grab targets support:
 Targets are replaced transactionally per scope and refreshed as leases. Exact-body registrations resolve before wildcard registrations. One wildcard descriptor owns at most one resolved body; publish separate right/left descriptors for simultaneous two-hand surface interaction.
 
 Before a script or native system moves a held mechanism, request yield and wait until state reaches `Yielded`. Republishing with a new target generation re-arms a yielded/invalidated descriptor.
+
+Climbing consumers can combine touch-grab state, bounded world raycasts, logical Jump observation, and `PlayerController` state. The controller snapshot is pointer-free and can explicitly check current penetration. `requestPlayerControllerJumpV1` uses FO4VR's native jump state machine; ROCK rejects stale generations, blocked physics writes, invalid height, unavailable controllers, and penetrating starts. A consumer should validate its own ledge/floor/headroom geometry first, clear its touch targets only after the jump request succeeds, and require physical grab release before rearming.
 
 ## Query the world
 

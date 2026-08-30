@@ -22,6 +22,8 @@ Use snapshot flags, not inference:
 
 When a required flag disappears, stop publishing or explicitly clear the affected scope/authority. Do not keep driving stale state.
 
+Player-controller jump requests are game-thread writes and require `PhysicsWriteAllowed`. ROCK revalidates the native controller implementation, executable bytes, generation guards, and current non-penetrating state for every request. A successful call admits only the native jump transition; it is not a teleport, mantle, or guarantee that a consumer-selected landing surface is safe.
+
 ## Generation identity
 
 `worldGeneration`, `skeletonGeneration`, `providerGeneration`, `collisionGeneration`, and `weaponGenerationKey` prevent cross-lifetime reuse. Copy the current values into requests that expose those guards. Treat a mismatch as normal invalidation and reacquire current state.

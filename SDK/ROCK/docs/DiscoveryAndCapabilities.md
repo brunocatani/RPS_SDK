@@ -47,6 +47,7 @@ Capabilities are owner permissions requested at registration and returned in `gr
 | `TouchGrabTargets` | Publish fixed/hinge/prismatic touch-grab targets and read their states. |
 | `WorldRaycasts` | Issue bounded provider-filtered world raycasts in owner callbacks. |
 | `ColliderVisualizationOverride` | Focus debug visualization on one current weapon body. |
+| `PlayerController` | Read the native player-controller value snapshot and request guarded native jumps. |
 
 Request only what the mod actually uses. Registration can succeed with a subset; the granted mask is authoritative.
 
@@ -65,6 +66,8 @@ The second feature word currently defines:
 ## Table guards
 
 Every appended family has a named `ROCK_PROVIDER_API_V1_*_TABLE_BYTES` constant and usually a `supports...V1` helper. Initialization with the family constant is the simplest hard requirement. A plugin supporting older providers can initialize without a minimum, fetch limits, and conditionally enable each family through the helper.
+
+The logical-input and player-controller additions use table-extent helpers because both V1 feature words are full. `getLogicalInputActionStateV1` additionally requires the registered `InputObservability` capability. Controller state and jump calls require `PlayerController`; the granted capability mask remains the per-owner behavioral authority.
 
 ## Limits
 
