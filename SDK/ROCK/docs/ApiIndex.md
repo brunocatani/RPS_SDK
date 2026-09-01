@@ -92,7 +92,7 @@ The signature, enum values, structure defaults, flags, and inline support helper
 | 83 | `clearTouchGrabTargetsForScopeV1` | Clear one touch-grab scope. |
 | 84 | `copyTouchGrabStatesForScopeV1` | Copy owner-scoped target phase/contact snapshots. |
 | 85 | `requestTouchGrabYieldV1` | Asynchronously yield a target before native/scripted motion. |
-| 86 | `requestEquippedWeaponHandV1` | Request exact-hand ownership for the current weapon under handling authority. |
+| 86 | `requestEquippedWeaponHandV1` | ABI-preserved slot for the removed exact-hand feature; declines every request. |
 | 87 | `queryWorldRaycastV1` | Perform a bounded provider-filtered game-thread world raycast. |
 | 88 | `setColliderVisualizationOverrideV1` | Focus overlay visualization on one current weapon body. |
 | 89 | `clearColliderVisualizationOverrideV1` | Clear the caller's collider visualization focus. |

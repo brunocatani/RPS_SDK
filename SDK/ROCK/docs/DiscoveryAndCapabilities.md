@@ -32,7 +32,7 @@ Capabilities are owner permissions requested at registration and returned in `gr
 | `EquippedWeaponGripState` | Read resolved weapon/grip/muzzle state. |
 | `HandVisualAuthority` | Publish presented hand/finger transforms. |
 | `NativeAnimationRuntimeProvider` | Publish or clear native animation runtime state. |
-| `EquippedWeaponHandlingAuthority` | Own equipped-weapon handling policy and exact-hand requests. |
+| `EquippedWeaponHandlingAuthority` | Own equipped-weapon handling policy. |
 | `DebugOverlayPublication` | Publish bounded stereo overlay lines/text. |
 | `ProviderEvents` | Consume the owner-filtered provider event cursor. |
 | `HandInteractionState` | Read coherent per-hand interaction state. |
@@ -56,6 +56,8 @@ Request only what the mod actually uses. Registration can succeed with a subset;
 The first feature word currently defines:
 
 `FrameCallbacks`, `LifecycleFields`, `HandFrames`, `WeaponEvidence`, `BodyContacts`, `ExternalContacts`, `ConsumerRegistrationV1`, `OwnerFilteredExternalContactsV1`, `InteractionCommandQueue`, `ForceGrabCommand`, `ForceReleaseCommand`, `ThrownDropCommand`, `HandInputSuppression`, `WeaponPartInteraction`, `WeaponPartGripState`, `WeaponPartRecordIdentity`, `WeaponPartTargetNonExclusive`, `RawWandButtonState`, `PipboyInputSuppression`, `WeaponEmitters`, `NativeAnimationAuthority`, `AnimationPhases`, `EquippedWeaponGripState`, `HandVisualAuthority`, `NativeAnimationRuntimeProvider`, `EquippedWeaponHandlingAuthority`, `DebugOverlayPublication`, `PresentedHandFrames`, `EquippedWeaponHandRequest`, and `ColliderVisualizationOverride`.
+
+`EquippedWeaponHandRequest` stays defined for ABI compatibility but is never advertised: the programmatic exact-hand feature was removed, and its entry point declines every request.
 
 ## Feature word 2
 

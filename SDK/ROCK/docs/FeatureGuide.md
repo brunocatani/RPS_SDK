@@ -44,7 +44,7 @@ Raw wand state exposes sample metadata so a consumer can distinguish current inp
 
 Native animation authority, phase callbacks, runtime publication, hand visual authority, presented pose readback, and handling authority form a coordinated animation surface. Acquire the narrow authority first, write only under `VisualWriteAllowed`, use generation guards, and deterministically clear every authority/publication.
 
-Exact-hand weapon requests are valid only for the currently equipped weapon and while the caller owns handling authority. Left-hand requests additionally require the ambidextrous handoff policy.
+The programmatic exact-hand weapon request was removed: a physical handoff is the only way to change the carrying hand. `requestEquippedWeaponHandV1` remains ABI-stable but declines every well-formed request with `HandUnavailable`, and `EquippedWeaponHandRequest` is no longer advertised.
 
 ## Build touch mechanisms and climbing
 
