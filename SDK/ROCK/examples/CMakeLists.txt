@@ -134,9 +134,6 @@ add_rock_sdk_example(
   ROCKSDKOffhandLease
   "${CMAKE_CURRENT_LIST_DIR}/mods/OffhandLease.cpp")
 add_rock_sdk_example(
-  ROCKSDKEquippedHandPolicy
-  "${CMAKE_CURRENT_LIST_DIR}/mods/EquippedHandPolicy.cpp")
-add_rock_sdk_example(
   ROCKSDKVisualHandOffset
   "${CMAKE_CURRENT_LIST_DIR}/mods/VisualHandOffset.cpp")
 
@@ -157,6 +154,5 @@ add_dependencies(ROCKSDKExamplePlugins
   ROCKSDKExternalContactSensor
   ROCKSDKForceGrabCommand
   ROCKSDKOffhandLease
-  ROCKSDKEquippedHandPolicy
   ROCKSDKVisualHandOffset
 )

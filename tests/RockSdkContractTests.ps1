@@ -36,7 +36,6 @@ foreach ($requiredPath in @(
         (Join-Path $examplesRoot 'mods/ExternalContactSensor.cpp'),
         (Join-Path $examplesRoot 'mods/ForceGrabCommand.cpp'),
         (Join-Path $examplesRoot 'mods/OffhandLease.cpp'),
-        (Join-Path $examplesRoot 'mods/EquippedHandPolicy.cpp'),
         (Join-Path $examplesRoot 'mods/VisualHandOffset.cpp'))) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         $failures.Add("Missing required SDK artifact: $requiredPath")
@@ -47,8 +46,8 @@ $exampleCmakePath = Join-Path $examplesRoot 'CMakeLists.txt'
 if (Test-Path -LiteralPath $exampleCmakePath) {
     $exampleCmake = Get-Content -Raw -LiteralPath $exampleCmakePath
     $exampleSources = Get-ChildItem -LiteralPath (Join-Path $examplesRoot 'mods') -File -Filter '*.cpp'
-    if ($exampleSources.Count -lt 17) {
-        $failures.Add("Expected at least 17 buildable example plugins; found $($exampleSources.Count)")
+    if ($exampleSources.Count -lt 16) {
+        $failures.Add("Expected at least 16 buildable example plugins; found $($exampleSources.Count)")
     }
     foreach ($exampleSource in $exampleSources) {
         if ($exampleCmake -notmatch [regex]::Escape($exampleSource.Name)) {
@@ -74,9 +73,6 @@ $mutatingExamples = @{
     'mods/OffhandLease.cpp' = @(
         'releaseOffhandReservationV1',
         'kEnableReservation = false')
-    'mods/EquippedHandPolicy.cpp' = @(
-        'clearEquippedWeaponHandlingAuthorityV1',
-        'kEnableLeftHandPolicy = false')
     'mods/VisualHandOffset.cpp' = @(
         'clearHandVisualAuthorityV1',
         'kEnableVisualOffset = false')
