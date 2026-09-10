@@ -104,8 +104,8 @@ if ((Test-Path -LiteralPath $headerPath) -and
             $apiIndexText,
             '(?m)^\|\s*(\d+)\s*\|\s*`([A-Za-z_][A-Za-z0-9_]*)`\s*\|'))
 
-    if ($headerFunctions.Count -ne 94) {
-        $failures.Add("Expected the V1 header to expose 94 function slots; found $($headerFunctions.Count)")
+    if ($headerFunctions.Count -ne 95) {
+        $failures.Add("Expected the V1 header to expose 95 function slots; found $($headerFunctions.Count)")
     }
     if ($documentedRows.Count -ne $headerFunctions.Count) {
         $failures.Add("API index documents $($documentedRows.Count) slots; header exposes $($headerFunctions.Count)")
