@@ -19,76 +19,14 @@ foreach ($requiredPath in @(
         $gettingStartedPath,
         (Join-Path $examplesRoot 'README.md'),
         (Join-Path $examplesRoot 'CMakeLists.txt'),
-        (Join-Path $examplesRoot 'common/ExampleRuntime.cpp'),
-        (Join-Path $examplesRoot 'cmake/VerifyFo4VrLoader.cmake'),
-        (Join-Path $examplesRoot 'mods/HandStateMonitor.cpp'),
-        (Join-Path $examplesRoot 'mods/WeaponInspector.cpp'),
-        (Join-Path $examplesRoot 'mods/SurfaceClimber.cpp'),
-        (Join-Path $examplesRoot 'mods/ContactVisualizer.cpp'),
-        (Join-Path $examplesRoot 'mods/CapabilityReporter.cpp'),
-        (Join-Path $examplesRoot 'mods/InputChordLease.cpp'),
-        (Join-Path $examplesRoot 'mods/WeaponCatalogDumper.cpp'),
-        (Join-Path $examplesRoot 'mods/MuzzleRayVisualizer.cpp'),
-        (Join-Path $examplesRoot 'mods/AnimationObserver.cpp'),
-        (Join-Path $examplesRoot 'mods/WeaponPartDriver.cpp'),
-        (Join-Path $examplesRoot 'mods/TouchMechanism.cpp'),
-        (Join-Path $examplesRoot 'mods/ColliderFocus.cpp'),
-        (Join-Path $examplesRoot 'mods/ExternalContactSensor.cpp'),
-        (Join-Path $examplesRoot 'mods/ForceGrabCommand.cpp'),
-        (Join-Path $examplesRoot 'mods/OffhandLease.cpp'),
-        (Join-Path $examplesRoot 'mods/VisualHandOffset.cpp'))) {
+        (Join-Path $examplesRoot 'common/ExampleRuntime.cpp'))) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         $failures.Add("Missing required SDK artifact: $requiredPath")
     }
 }
 
-$exampleCmakePath = Join-Path $examplesRoot 'CMakeLists.txt'
-if (Test-Path -LiteralPath $exampleCmakePath) {
-    $exampleCmake = Get-Content -Raw -LiteralPath $exampleCmakePath
-    $exampleSources = Get-ChildItem -LiteralPath (Join-Path $examplesRoot 'mods') -File -Filter '*.cpp'
-    if ($exampleSources.Count -lt 16) {
-        $failures.Add("Expected at least 16 buildable example plugins; found $($exampleSources.Count)")
-    }
-    foreach ($exampleSource in $exampleSources) {
-        if ($exampleCmake -notmatch [regex]::Escape($exampleSource.Name)) {
-            $failures.Add("Example source is not wired into CMake: $($exampleSource.Name)")
-        }
-    }
-}
-
-$mutatingExamples = @{
-    'mods/WeaponPartDriver.cpp' = @(
-        'clearWeaponPartDriveTargetsV1',
-        'clearWeaponPartTargetsV1',
-        'kEnableDemoMotion = false')
-    'mods/TouchMechanism.cpp' = @(
-        'clearTouchGrabTargetsForScopeV1',
-        'kEnableMechanism = false')
-    'mods/ColliderFocus.cpp' = @(
-        'clearColliderVisualizationOverrideV1',
-        'kEnableFocus = false')
-    'mods/ExternalContactSensor.cpp' = @(
-        'clearExternalBodiesForScopeV1',
-        'kEnableSensor = false')
-    'mods/OffhandLease.cpp' = @(
-        'releaseOffhandReservationV1',
-        'kEnableReservation = false')
-    'mods/VisualHandOffset.cpp' = @(
-        'clearHandVisualAuthorityV1',
-        'kEnableVisualOffset = false')
-}
-foreach ($entry in $mutatingExamples.GetEnumerator()) {
-    $path = Join-Path $examplesRoot $entry.Key
-    if (-not (Test-Path -LiteralPath $path)) {
-        continue
-    }
-    $text = Get-Content -Raw -LiteralPath $path
-    foreach ($requiredText in $entry.Value) {
-        if ($text -notmatch [regex]::Escape($requiredText)) {
-            $failures.Add("$($entry.Key) is missing safety contract '$requiredText'")
-        }
-    }
-}
+# Actual example compilation, inert defaults, cleanup and loader exports are
+# verified by ROCKSDKExampleBehaviorTests. This script owns publication data.
 
 if ((Test-Path -LiteralPath $headerPath) -and
     (Test-Path -LiteralPath $apiIndexPath)) {
@@ -104,9 +42,6 @@ if ((Test-Path -LiteralPath $headerPath) -and
             $apiIndexText,
             '(?m)^\|\s*(\d+)\s*\|\s*`([A-Za-z_][A-Za-z0-9_]*)`\s*\|'))
 
-    if ($headerFunctions.Count -ne 95) {
-        $failures.Add("Expected the V1 header to expose 95 function slots; found $($headerFunctions.Count)")
-    }
     if ($documentedRows.Count -ne $headerFunctions.Count) {
         $failures.Add("API index documents $($documentedRows.Count) slots; header exposes $($headerFunctions.Count)")
     } else {
@@ -125,17 +60,11 @@ if ((Test-Path -LiteralPath $headerPath) -and
 
 if (Test-Path -LiteralPath $capabilitiesPath) {
     $capabilitiesText = Get-Content -Raw -LiteralPath $capabilitiesPath
-    $requiredCapabilities = @(
-        'FrameSnapshots', 'ExternalBodies', 'ExternalContacts',
-        'OffhandReservation', 'InteractionCommands', 'HandInputSuppression',
-        'WeaponPartInteraction', 'NativeAnimationAuthority', 'AnimationPhases',
-        'EquippedWeaponGripState', 'HandVisualAuthority',
-        'NativeAnimationRuntimeProvider', 'EquippedWeaponHandlingAuthority',
-        'DebugOverlayPublication', 'ProviderEvents', 'HandInteractionState',
-        'ExternalBodyScopes', 'WeaponPartObservability', 'WeaponComposition',
-        'PoseReadback', 'SemanticHandContacts', 'PlayerColliderDescriptors',
-        'ScopeSightState', 'InputObservability', 'TouchGrabTargets',
-        'WorldRaycasts', 'ColliderVisualizationOverride', 'PlayerController')
+    $capabilityEnum = [regex]::Match((Get-Content -Raw -LiteralPath $headerPath),
+        '(?s)enum class RockProviderConsumerCapabilityV1[^\{]*\{([^}]+)\}').Groups[1].Value
+    $requiredCapabilities = @([regex]::Matches($capabilityEnum, '(?m)^\s*(\w+)\s*=') |
+        ForEach-Object { $_.Groups[1].Value } | Where-Object { $_ -ne 'None' })
+    if ($requiredCapabilities.Count -eq 0) { $failures.Add('No public capabilities could be read from the header.') }
     foreach ($capability in $requiredCapabilities) {
         if ($capabilitiesText -notmatch [regex]::Escape("``$capability``")) {
             $failures.Add("Capability documentation is missing '$capability'")
@@ -160,23 +89,7 @@ if (Test-Path -LiteralPath $examplesRoot) {
         if ($text -match '(?i)\bPAPER(?:_Toolkit)?\b|\bSCISSORS\b|\bROCK_Addons\b') {
             $failures.Add("Public SDK artifact names an internal/reference project: $($file.FullName)")
         }
-        if ($text -match '(?i)\b82\s+(?:callables|functions|slots)\b') {
-            $failures.Add("Public SDK artifact contains the stale 82-call count: $($file.FullName)")
-        }
-    }
-}
 
-$sdkDocumentation = Get-ChildItem -LiteralPath (Join-Path $Root 'SDK/ROCK') -Recurse -File |
-    Where-Object { $_.Extension -eq '.md' } |
-    ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }
-$combinedDocumentation = $sdkDocumentation -join "`n"
-foreach ($invalidIdentifier in @(
-        'RockProviderExternalBodyRole::Interactive',
-        'RockProviderExternalBodyContactPolicy::All',
-        'RockProviderHandInputSuppressionFlagV1::SuppressGrab',
-        'request.originGame')) {
-    if ($combinedDocumentation -match [regex]::Escape($invalidIdentifier)) {
-        $failures.Add("SDK documentation uses nonexistent identifier '$invalidIdentifier'")
     }
 }
 

@@ -42,17 +42,17 @@ set(ROCK_SDK_EXAMPLE_COMMON
   "${CMAKE_CURRENT_LIST_DIR}/common/ExampleRuntime.h"
 )
 
-include("${CMAKE_CURRENT_LIST_DIR}/cmake/VerifyFo4VrLoader.cmake")
-rock_sdk_verify_fo4vr_loader(
-  "${CMAKE_CURRENT_LIST_DIR}/common/ExampleRuntime.cpp")
-
 find_package(spdlog CONFIG REQUIRED)
+
+add_custom_target(ROCKSDKExamplePlugins)
 
 function(add_rock_sdk_example target_name source_path)
   add_library(${target_name} SHARED
     ${ROCK_SDK_EXAMPLE_COMMON}
     "${source_path}"
   )
+  add_dependencies(ROCKSDKExamplePlugins ${target_name})
+  set_property(GLOBAL APPEND PROPERTY ROCK_SDK_EXAMPLE_TARGETS ${target_name})
   target_compile_features(${target_name} PRIVATE cxx_std_23)
   target_compile_definitions(${target_name} PRIVATE
     UNICODE
@@ -137,22 +137,28 @@ add_rock_sdk_example(
   ROCKSDKVisualHandOffset
   "${CMAKE_CURRENT_LIST_DIR}/mods/VisualHandOffset.cpp")
 
-add_custom_target(ROCKSDKExamplePlugins)
-add_dependencies(ROCKSDKExamplePlugins
-  ROCKSDKHandStateMonitor
-  ROCKSDKWeaponInspector
-  ROCKSDKSurfaceClimber
-  ROCKSDKContactVisualizer
-  ROCKSDKCapabilityReporter
-  ROCKSDKInputChordLease
-  ROCKSDKWeaponCatalogDumper
-  ROCKSDKMuzzleRayVisualizer
-  ROCKSDKAnimationObserver
-  ROCKSDKWeaponPartDriver
-  ROCKSDKTouchMechanism
-  ROCKSDKColliderFocus
-  ROCKSDKExternalContactSensor
-  ROCKSDKForceGrabCommand
-  ROCKSDKOffhandLease
-  ROCKSDKVisualHandOffset
-)
+if(BUILD_ROCK_TESTS OR RPS_SDK_ENABLE_TESTS OR ROCK_SDK_EXAMPLES_STANDALONE)
+  enable_testing()
+  add_executable(ROCKSDKExampleBehaviorTests
+    "tests/ExampleBehaviorTests.cpp"
+    "tests/OffhandLeaseTests.cpp"
+    "tests/VisualHandOffsetTests.cpp"
+    "tests/ColliderFocusTests.cpp"
+    "tests/TouchMechanismTests.cpp"
+    "tests/ExternalContactSensorTests.cpp"
+    "tests/WeaponPartDriverTests.cpp")
+  target_compile_features(ROCKSDKExampleBehaviorTests PRIVATE cxx_std_23)
+  target_include_directories(ROCKSDKExampleBehaviorTests PRIVATE
+    "${ROCK_SDK_ROOT}/include" "${CMAKE_CURRENT_LIST_DIR}/common")
+  target_compile_definitions(ROCKSDKExampleBehaviorTests PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+  # The documented SDK aggregate must build every registered SDK executable.
+  add_dependencies(ROCKSDKExamplePlugins ROCKSDKExampleBehaviorTests)
+  get_property(EXAMPLE_TARGETS GLOBAL PROPERTY ROCK_SDK_EXAMPLE_TARGETS)
+  set(EXAMPLE_DLLS)
+  foreach(EXAMPLE IN LISTS EXAMPLE_TARGETS)
+    list(APPEND EXAMPLE_DLLS "$<TARGET_FILE:${EXAMPLE}>")
+  endforeach()
+  add_test(NAME ROCKSDKExampleBehaviorTests
+    COMMAND ROCKSDKExampleBehaviorTests ${EXAMPLE_DLLS})
+  set_tests_properties(ROCKSDKExampleBehaviorTests PROPERTIES LABELS "sdk" TIMEOUT 30)
+endif()
