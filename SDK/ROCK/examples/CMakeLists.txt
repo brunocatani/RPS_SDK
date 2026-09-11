@@ -131,6 +131,9 @@ add_rock_sdk_example(
   ROCKSDKForceGrabCommand
   "${CMAKE_CURRENT_LIST_DIR}/mods/ForceGrabCommand.cpp")
 add_rock_sdk_example(
+  ROCKSDKPowerArmorInteraction
+  "${CMAKE_CURRENT_LIST_DIR}/mods/PowerArmorInteraction.cpp")
+add_rock_sdk_example(
   ROCKSDKOffhandLease
   "${CMAKE_CURRENT_LIST_DIR}/mods/OffhandLease.cpp")
 add_rock_sdk_example(
@@ -141,6 +144,7 @@ if(BUILD_ROCK_TESTS OR RPS_SDK_ENABLE_TESTS OR ROCK_SDK_EXAMPLES_STANDALONE)
   enable_testing()
   add_executable(ROCKSDKExampleBehaviorTests
     "tests/ExampleBehaviorTests.cpp"
+    "tests/PowerArmorInteractionTests.cpp"
     "tests/OffhandLeaseTests.cpp"
     "tests/VisualHandOffsetTests.cpp"
     "tests/ColliderFocusTests.cpp"

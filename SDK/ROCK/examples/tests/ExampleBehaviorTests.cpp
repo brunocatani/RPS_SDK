@@ -11,6 +11,7 @@ bool testColliderFocus();
 bool testTouchMechanism();
 bool testExternalContactSensor();
 bool testWeaponPartDriver();
+bool testPowerArmorInteraction();
 
 int main(int argc, char** argv)
 {
@@ -21,6 +22,7 @@ int main(int argc, char** argv)
     ok &= testTouchMechanism();
     ok &= testExternalContactSensor();
     ok &= testWeaponPartDriver();
+    ok &= testPowerArmorInteraction();
     // Inspect exports without running CommonLib static initialization, which
     // requires the game executable. Loader admission still requires FO4VR.
     for (int index = 1; index < argc; ++index) {
