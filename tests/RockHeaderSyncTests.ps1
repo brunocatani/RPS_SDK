@@ -9,7 +9,8 @@ $ErrorActionPreference = 'Stop'
 
 $pairs = @(
     @('SDK/ROCK/include/ROCKProviderApi.h', 'src/api/ROCKProviderApi.h'),
-    @('SDK/ROCK/include/ROCKApi.h', 'src/api/ROCKApi.h')
+    @('SDK/ROCK/include/ROCKApi.h', 'src/api/ROCKApi.h'),
+    @('SDK/ROCK/include/ROCKConfigurationApi.h', 'src/api/ROCKConfigurationApi.h')
 )
 
 foreach ($pair in $pairs) {
