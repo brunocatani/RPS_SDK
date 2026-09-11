@@ -1,15 +1,16 @@
 #include "ExampleRuntime.h"
 
+#include <RE/Fallout.h>
+
 #include <cstdio>
 
 namespace
 {
     using namespace rock::provider;
 
-    // Set this to a form owned/resolved by your mod. ROCK resolves the value on
-    // its update path; never pass or retain a TESObjectREFR pointer here.
+    // Set this to a world reference owned/resolved by your mod. The helper
+    // borrows its pointer only to read formID; ROCK resolves that value later.
     std::uint32_t kTargetFormId = 0;
-    constexpr std::uint32_t kInvalidBodyId = 0x7FFF'FFFF;
     constexpr std::uint64_t kCommandTimeoutFrames = 120;
 
     std::uint64_t g_commandId{ 0 };
@@ -71,24 +72,18 @@ namespace
 
         if (g_commandId == 0 && !g_attempted) {
             g_attempted = true;
-            RockProviderForceGrabRequestV1 request{};
-            request.hand = RockProviderHand::Right;
-            request.targetFormId = kTargetFormId;
-            request.targetBodyId = kInvalidBodyId;
-            request.worldGeneration = snapshot.worldGeneration;
-            request.skeletonGeneration = snapshot.skeletonGeneration;
-            request.providerGeneration = snapshot.providerGeneration;
-            request.maxDistanceGame = 150.0f;
-
-            const auto result = RockProviderApi::inst->requestForceGrabV1(
-                ownerToken,
-                &request,
-                &g_commandId);
-            if (result != RockProviderResultV1::Ok &&
-                result != RockProviderResultV1::RequestQueued) {
-                g_commandId = 0;
-            } else {
+            RockHandItems<RE::TESObjectREFR> hands{
+                ownerToken, &RE::TESForm::GetFormByID<RE::TESObjectREFR> };
+            auto* target = RE::TESForm::GetFormByID<RE::TESObjectREFR>(kTargetFormId);
+            const auto grab = hands.RequestGrabItem(false, target, 150.0f);
+            g_commandId = grab.commandId;
+            if (grab.result == RockProviderResultV1::RequestQueued) {
                 g_queuedFrame = snapshot.frameIndex;
+            } else {
+                char message[96]{};
+                std::snprintf(message, sizeof(message),
+                    "Force-grab admission failed: result=%u", static_cast<std::uint32_t>(grab.result));
+                rock::sdk::example::logWarning(message);
             }
         }
 

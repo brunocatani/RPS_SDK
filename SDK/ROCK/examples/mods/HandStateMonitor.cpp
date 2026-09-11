@@ -1,5 +1,7 @@
 #include "ExampleRuntime.h"
 
+#include <RE/Fallout.h>
+
 #include <array>
 #include <cstdio>
 
@@ -28,17 +30,23 @@ namespace
             return;
         }
 
+        RockHandItems<RE::TESObjectREFR> hands{
+            ownerToken, &RE::TESForm::GetFormByID<RE::TESObjectREFR> };
+        RockProviderResultV1 heldResult{};
+        auto* held = hands.GetHeldItem(hand == RockProviderHand::Left, &heldResult);
         char message[224]{};
         std::snprintf(
             message,
             sizeof(message),
-            "%s hand phase=%u targetKind=%u form=%08X body=%08X heldBodies=%u",
+            "%s hand phase=%u targetKind=%u form=%08X body=%08X heldBodies=%u heldRef=%08X heldResult=%u",
             hand == RockProviderHand::Right ? "Right" : "Left",
             static_cast<std::uint32_t>(state.phase),
             static_cast<std::uint32_t>(state.targetKind),
             state.targetFormId,
             state.primaryBodyId,
-            state.heldBodyCount);
+            state.heldBodyCount,
+            held ? held->GetFormID() : 0,
+            static_cast<std::uint32_t>(heldResult));
         rock::sdk::example::logInfo(message);
     }
 
