@@ -17,10 +17,12 @@ foreach ($path in @($sdkHeader, $sourceHeader, $paperSdkHeader)) {
     }
 }
 
-$sdkHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sdkHeader).Hash
+# The SDK checks out LF while the runtime checkout may use CRLF. Compare the
+# complete, case-sensitive header text after normalizing only those newlines.
+$sdkText = (Get-Content -Raw -Encoding utf8 -LiteralPath $sdkHeader).Replace("`r`n", "`n")
 foreach ($authority in @($sourceHeader, $paperSdkHeader)) {
-    $authorityHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $authority).Hash
-    if ($sdkHash -ne $authorityHash) {
+    $authorityText = (Get-Content -Raw -Encoding utf8 -LiteralPath $authority).Replace("`r`n", "`n")
+    if ($sdkText -cne $authorityText) {
         throw "RPS SDK PAPER header differs from $authority"
     }
 }

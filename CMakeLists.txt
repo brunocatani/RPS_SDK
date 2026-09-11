@@ -34,10 +34,18 @@ target_include_directories(RPSSDK_PAPER INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SDK/PAPER/include>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/RPS_SDK/PAPER>")
 
+add_library(RPSSDK_UI INTERFACE)
+add_library(RPS::UI ALIAS RPSSDK_UI)
+set_target_properties(RPSSDK_UI PROPERTIES EXPORT_NAME UI)
+target_compile_features(RPSSDK_UI INTERFACE cxx_std_17)
+target_include_directories(RPSSDK_UI INTERFACE
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SDK/UI/include>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/RPS_SDK/UI>")
+
 add_library(RPSSDK INTERFACE)
 add_library(RPS::SDK ALIAS RPSSDK)
 set_target_properties(RPSSDK PROPERTIES EXPORT_NAME SDK)
-target_link_libraries(RPSSDK INTERFACE RPSSDK_ROCK RPSSDK_PAPER)
+target_link_libraries(RPSSDK INTERFACE RPSSDK_ROCK RPSSDK_PAPER RPSSDK_UI)
 
 if(RPS_SDK_BUILD_ROCK_EXAMPLES OR RPS_SDK_BUILD_PAPER_EXAMPLES)
   if(NOT DEFINED COMMON_LIB_F4VR_PATH OR COMMON_LIB_F4VR_PATH STREQUAL "")
@@ -83,12 +91,14 @@ if(RPS_SDK_BUILD_ROCK_EXAMPLES OR RPS_SDK_BUILD_PAPER_EXAMPLES)
   endif()
 endif()
 
-install(TARGETS RPSSDK RPSSDK_ROCK RPSSDK_PAPER
+install(TARGETS RPSSDK RPSSDK_ROCK RPSSDK_PAPER RPSSDK_UI
   EXPORT RPSSDKTargets)
 install(DIRECTORY "SDK/ROCK/include/"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/RPS_SDK/ROCK")
 install(DIRECTORY "SDK/PAPER/include/"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/RPS_SDK/PAPER")
+install(DIRECTORY "SDK/UI/include/"
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/RPS_SDK/UI")
 install(EXPORT RPSSDKTargets
   FILE RPS_SDKTargets.cmake
   NAMESPACE RPS::
@@ -108,6 +118,13 @@ install(FILES
 
 if(RPS_SDK_ENABLE_TESTS)
   enable_testing()
+  # Compile the inert UI integration fragment without adding an ImGui dependency
+  # or producing a plugin that could accidentally be deployed.
+  add_library(RPSSDKUIExample OBJECT SDK/UI/examples/PanelConsumer.cpp)
+  target_link_libraries(RPSSDKUIExample PRIVATE RPS::UI)
+  if(TARGET RPSSDKExamplePlugins)
+    add_dependencies(RPSSDKExamplePlugins RPSSDKUIExample)
+  endif()
   find_program(RPS_SDK_PWSH_EXECUTABLE NAMES pwsh REQUIRED)
   add_test(
     NAME RpsSdkRockContractTests
@@ -160,5 +177,14 @@ if(RPS_SDK_ENABLE_TESTS)
         -File "${CMAKE_CURRENT_SOURCE_DIR}/tests/PaperHeaderSyncTests.ps1"
         -Root "${CMAKE_CURRENT_SOURCE_DIR}"
         -PaperRoot "${_workspace_paper}")
+  endif()
+
+  set(_workspace_ui "${CMAKE_CURRENT_SOURCE_DIR}/../../secondary_projects/RPS_UI_Framework")
+  if(EXISTS "${_workspace_ui}/SDK/include/RPSUIFrameworkApi.h")
+    add_test(
+      NAME RpsSdkUiHeaderSyncTests
+      COMMAND "${RPS_SDK_PWSH_EXECUTABLE}" -NoProfile
+        -File "${CMAKE_CURRENT_SOURCE_DIR}/tests/UiHeaderSyncTests.ps1"
+        -Root "${CMAKE_CURRENT_SOURCE_DIR}" -UiRoot "${_workspace_ui}")
   endif()
 endif()
