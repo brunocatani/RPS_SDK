@@ -119,6 +119,8 @@ namespace
         targets[0].flags =
             targetFlag(RockProviderTouchGrabTargetFlagV1::AllowRightHand) |
             targetFlag(RockProviderTouchGrabTargetFlagV1::MatchAnyBody) |
+            targetFlag(RockProviderTouchGrabTargetFlagV1::FallbackOnly) |
+            targetFlag(RockProviderTouchGrabTargetFlagV1::ExcludePowerArmor) |
             targetFlag(RockProviderTouchGrabTargetFlagV1::MatchStaticMotion) |
             targetFlag(RockProviderTouchGrabTargetFlagV1::MatchKeyframedMotion);
         targets[1] = targets[0];
@@ -126,6 +128,8 @@ namespace
         targets[1].flags =
             targetFlag(RockProviderTouchGrabTargetFlagV1::AllowLeftHand) |
             targetFlag(RockProviderTouchGrabTargetFlagV1::MatchAnyBody) |
+            targetFlag(RockProviderTouchGrabTargetFlagV1::FallbackOnly) |
+            targetFlag(RockProviderTouchGrabTargetFlagV1::ExcludePowerArmor) |
             targetFlag(RockProviderTouchGrabTargetFlagV1::MatchStaticMotion) |
             targetFlag(RockProviderTouchGrabTargetFlagV1::MatchKeyframedMotion);
 
