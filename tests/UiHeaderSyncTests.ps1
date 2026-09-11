@@ -6,7 +6,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-foreach ($header in @('RPSUIFrameworkApi.h', 'RPSUICooperationApi.h')) {
+foreach ($header in @('RPSUIFrameworkApi.h', 'RPSUICooperationApi.h', 'RPSUIInputApi.h')) {
     $sdkPath = Join-Path $Root ('SDK/UI/include/' + $header)
     $runtimePath = Join-Path $UiRoot ('SDK/include/' + $header)
     if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sdkPath).Hash -ne
