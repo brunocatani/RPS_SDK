@@ -1,4 +1,4 @@
-#include "RPSUIFrameworkApi.h"
+#include "RPSUICooperationApi.h"
 
 #include <cstring>
 
@@ -8,17 +8,17 @@ namespace status_panel_example
 
     // Integration fragment, with no F4SE entry point and no automatic activation.
     // Call these functions serially from the consumer's control thread. The
-    // renderer and userData must remain alive while a host snapshot can use them;
-    // unregister is not a render-callback join. Do not hot-unload this consumer.
+    // renderer and userData remain alive until stop() returns Ok. On CallbackBusy,
+    // retry on a later control tick; never spin or wait inside a render callback.
     struct Panel
     {
         Panel() = default;
         Panel(const Panel&) = delete;
         Panel& operator=(const Panel&) = delete;
 
-        // Call stop explicitly while the host is alive. Automatic destruction
-        // cannot establish the external render quiescence needed by userData.
+        // The owner calls stop explicitly; a destructor cannot retry CallbackBusy.
         const ApiV1* api{};
+        const CooperationApiV1* cooperation{};
         ConsumerHandleV1 consumer{};
         std::uint64_t handle{};
 
@@ -26,9 +26,12 @@ namespace status_panel_example
         {
             if (handle || consumer.ownerToken || !render) return ResultV1::InvalidArgument;
             api = RequestApiV1();
+            cooperation = RequestCooperationApiV1();
             if (!api || !api->isFrameworkReady || !api->registerConsumer ||
                 !api->unregisterConsumer || !api->registerPanel ||
                 !api->submitPanelPresentation || !api->getPanelState ||
+                !cooperation || !cooperation->registerPanel || !cooperation->getSnapshot ||
+                !cooperation->unregisterConsumerSafely ||
                 !api->isFrameworkReady()) return ResultV1::FrameworkNotReady;
 
             ConsumerRegistrationV1 registration{};
@@ -43,12 +46,15 @@ namespace status_panel_example
                 return cleanup == ResultV1::Ok ? ResultV1::FrameworkNotReady : cleanup;
             }
 
-            PanelRegistrationV1 panel{};
+            CooperativePanelRegistrationV1 contract{};
+            auto& panel = contract.panel;
             std::memcpy(panel.panelId, "example.status.main", sizeof("example.status.main"));
             std::memcpy(panel.displayName, "Status", sizeof("Status"));
             panel.renderCallback = render;
             panel.userData = userData;
-            result = api->registerPanel(consumer.ownerToken, &panel, &handle);
+            PanelAgreementV1 agreement{};
+            result = cooperation->registerPanel(consumer.ownerToken, &contract, &agreement);
+            handle = agreement.panelHandle;
             if (result != ResultV1::Ok) {
                 const auto cleanup = stop();
                 if (cleanup != ResultV1::Ok) return cleanup;
@@ -74,14 +80,23 @@ namespace status_panel_example
                 ResultV1::PanelNotRegistered;
         }
 
+        // Advisory snapshot only: another mod may move/open/close after this call.
+        // Pointer routing and overlap separation remain owned by the framework.
+        [[nodiscard]] ResultV1 neighbors(CooperationSnapshotV1& out) const noexcept
+        {
+            out = {};
+            return cooperation ? cooperation->getSnapshot(&out) : ResultV1::FrameworkNotReady;
+        }
+
         [[nodiscard]] ResultV1 stop() noexcept
         {
             if (!api || !consumer.ownerToken) return ResultV1::Ok;
-            // Removes every panel owned by this registration. Keep callback code
-            // and userData alive until the host can no longer hold a snapshot.
-            const auto result = api->unregisterConsumer(consumer.ownerToken);
-            if (result == ResultV1::Ok || result == ResultV1::OwnerNotRegistered) {
+            // Closes callback admission immediately; Ok guarantees no remaining
+            // RPS callback can use this owner's code/data. Busy retains ownership.
+            const auto result = cooperation->unregisterConsumerSafely(consumer.ownerToken);
+            if (result == ResultV1::Ok) {
                 api = nullptr;
+                cooperation = nullptr;
                 consumer = {};
                 handle = 0;
             }
