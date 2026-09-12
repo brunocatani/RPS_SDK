@@ -18,7 +18,7 @@ Owner/scoped external body registration and enriched contact cursors let a consu
 
 ### Interaction and input control
 
-Queued force grab, physical release, thrown drop, and cancellation; per-hand input suppression leases; offhand reservation leases; semantic weapon-part targets/drives; and exact-hand equipped-weapon requests under explicit handling authority.
+Queued force grab, physical release, thrown drop, and cancellation; per-hand input suppression leases; offhand reservation leases; semantic weapon-part targets/drives; and inventory-to-hand transfers. The ABI-preserved exact-hand request slot declines requests; it is not a supported authority path.
 
 ### Animation and visuals
 

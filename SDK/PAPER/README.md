@@ -21,3 +21,7 @@ compilation, cache access, or live learning.
 Link `RPS::PAPER` when consuming this repository through CMake. The target adds
 the correct include directory; it does not add a runtime dependency or install
 `PAPER.dll`.
+
+## Current source behavior
+
+See [CurrentBehavior.md](docs/CurrentBehavior.md) for the source-verified interaction and compatibility changes as of 2026-09-11.

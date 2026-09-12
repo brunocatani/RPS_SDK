@@ -1,6 +1,6 @@
 # V1 function table index
 
-`RockProviderApi` is append-only. The x64 V1 table currently contains 93 function pointers (744 bytes). Slot order is ABI and is mechanically checked against this document.
+`RockProviderApi` is append-only. The x64 V1 table currently contains 99 function pointers (792 bytes). Slot order is ABI and is mechanically checked against this document.
 
 The signature, enum values, structure defaults, flags, and inline support helpers in `ROCKProviderApi.h` are normative. This index explains intent and the principal gate; it does not replace the header.
 
@@ -99,13 +99,23 @@ The signature, enum values, structure defaults, flags, and inline support helper
 | 90 | `getLogicalInputActionStateV1` | Read sequence-bearing semantic input state, currently the configured logical Jump action. |
 | 91 | `getPlayerControllerStateV1` | Read a pointer-free native player-controller snapshot with optional bounded penetration checking. |
 | 92 | `requestPlayerControllerJumpV1` | Request a generation-bound native controller jump after ROCK validates lifecycle and penetration state. |
+| 93 | `getRawWandThumbstickV1` | Read physical Axis0 before game-input suppression. Check the appended table boundary before calling; missing, stale, or menu-blocked samples return false and zero both outputs. |
+| 94 | `getNativeInputContextV1` | Frame-callback query for native menu ownership and primary ViewCaster activation priority. Zero means unavailable; check the appended table boundary. No input mutation or engine pointers. |
+| 95 | `getHandTargetDetailsV1` | Observe either hand: resolved reference, body/layer, anchor, mesh part and selected PA point. Requires TargetDetails; owner frame callback only. |
+| 96 | `queryReferenceInteractionV1` | Query native open state, activation blocking and furniture use, with independent availability. |
+| 97 | `queryPowerArmorTargetV1` | Classify PA furniture/actor, resolve its frame and copy animated armor-hand bone poses. Requires PowerArmor. |
+| 98 | `requestPowerArmorGrabV1` | Queue a specific armor-hand point grab. Requires PowerArmor and InteractionCommands; existing command result/cancel/release APIs apply. |
 
 ## Exports
 
-`ROCK.dll` exposes three C exports:
+The provider table has three discovery exports:
 
 - `ROCKAPI_GetDescriptorV1`: preferred safe discovery path.
 - `ROCKAPI_GetProviderApi`: legacy provider-table accessor.
 - `ROCKAPI_GetApi`: alias returning the same table.
 
 Consumers normally call `RockProviderApi::initialize` instead of resolving these manually.
+
+`GetROCKConfigurationApi` is an independent V1 export with its own version/size
+checks and three configuration callbacks. It does not change the 99 provider
+slots. See [Configuration.md](Configuration.md).

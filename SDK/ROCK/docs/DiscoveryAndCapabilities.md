@@ -55,7 +55,7 @@ Request only what the mod actually uses. Registration can succeed with a subset;
 
 The first feature word currently defines:
 
-`FrameCallbacks`, `LifecycleFields`, `HandFrames`, `WeaponEvidence`, `BodyContacts`, `ExternalContacts`, `ConsumerRegistrationV1`, `OwnerFilteredExternalContactsV1`, `InteractionCommandQueue`, `ForceGrabCommand`, `ForceReleaseCommand`, `ThrownDropCommand`, `HandInputSuppression`, `WeaponPartInteraction`, `WeaponPartGripState`, `WeaponPartRecordIdentity`, `WeaponPartTargetNonExclusive`, `RawWandButtonState`, `PipboyInputSuppression`, `WeaponEmitters`, `NativeAnimationAuthority`, `AnimationPhases`, `EquippedWeaponGripState`, `HandVisualAuthority`, `NativeAnimationRuntimeProvider`, `EquippedWeaponHandlingAuthority`, `DebugOverlayPublication`, `PresentedHandFrames`, `EquippedWeaponHandRequest`, and `ColliderVisualizationOverride`.
+`FrameCallbacks`, `LifecycleFields`, `HandFrames`, `WeaponEvidence`, `BodyContacts`, `ExternalContacts`, `InventoryForceGrab`, `ConsumerRegistrationV1`, `OwnerFilteredExternalContactsV1`, `InteractionCommandQueue`, `ForceGrabCommand`, `ForceReleaseCommand`, `ThrownDropCommand`, `HandInputSuppression`, `WeaponPartInteraction`, `WeaponPartGripState`, `WeaponPartRecordIdentity`, `WeaponPartTargetNonExclusive`, `RawWandButtonState`, `PipboyInputSuppression`, `WeaponEmitters`, `NativeAnimationAuthority`, `AnimationPhases`, `EquippedWeaponGripState`, `HandVisualAuthority`, `NativeAnimationRuntimeProvider`, `EquippedWeaponHandlingAuthority`, `DebugOverlayPublication`, `PresentedHandFrames`, `EquippedWeaponHandRequest`, and `ColliderVisualizationOverride`.
 
 `EquippedWeaponHandRequest` stays defined for ABI compatibility but is never advertised: the programmatic exact-hand feature was removed, and its entry point declines every request.
 
@@ -67,12 +67,23 @@ The second feature word currently defines:
 
 ## Table guards
 
-Every appended family has a named `ROCK_PROVIDER_API_V1_*_TABLE_BYTES` constant and usually a `supports...V1` helper. Initialization with the family constant is the simplest hard requirement. A plugin supporting older providers can initialize without a minimum, fetch limits, and conditionally enable each family through the helper.
+Most appended families have a named `ROCK_PROVIDER_API_V1_*_TABLE_BYTES` constant and usually a `supports...V1` helper. Initialization with the family constant is the simplest hard requirement. A plugin supporting older providers can initialize without a minimum, fetch limits, and conditionally enable each family through the helper.
 
-The logical-input and player-controller additions use table-extent helpers because both V1 feature words are full. `getLogicalInputActionStateV1` additionally requires the registered `InputObservability` capability. Controller state and jump calls require `PlayerController`; the granted capability mask remains the per-owner behavioral authority.
+The logical-input and player-controller additions use table-extent helpers rather than new feature bits. `getLogicalInputActionStateV1` additionally requires the registered `InputObservability` capability. Controller state and jump calls require `PlayerController`; the granted capability mask remains the per-owner behavioral authority.
 
 ## Limits
 
 Call `getProviderLimitsV1` for the stable prefix and `getProviderLimitsExtV1` for the complete current set. The extended structure covers consumers, callbacks, bodies/scopes/contacts, commands/results, input leases, weapon targets/drives/poses, animation authorities, overlay budgets, event retention, composition, semantic contacts, player colliders, touch targets/scopes, evidence catalogs, and per-owner raycast budgets.
 
 Call `getPublicStructureSizeV1` when interoperating across header revisions and prefix-copy only the provider-supported bytes of extensible value structures.
+
+## Recent UI and inventory gates
+
+`InventoryForceGrab` is a feature-word-1 bit; it gates the added inventory mode
+of the existing force-grab slot. `getRawWandThumbstickV1` and
+`getNativeInputContextV1` require table extents of 752 and 760 bytes respectively;
+compute their member boundaries before reading the pointers. Configuration V1
+is separately discovered through `GetROCKConfigurationApi`, with its own size
+and version validation.
+
+`TargetDetails` permits the generic hand-target and reference-interaction queries. `PowerArmor` permits PA classification, linked-frame and bone-pose queries; specific-point requests also require `InteractionCommands`. Negotiate `ROCK_PROVIDER_API_V1_POWER_ARMOR_TABLE_BYTES` before using these appended functions. Queries require the animation-owner thread; owner frame callbacks provide this boundary. PA commands retain normal result/cancellation semantics, accept native grip release, and release their own attachment when their consumer unregisters.

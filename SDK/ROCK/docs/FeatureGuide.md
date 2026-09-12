@@ -67,3 +67,11 @@ World raycasts are owner-callback-only, bounded, and use ROCK's validated filter
 ## Publish diagnostics
 
 Debug overlay lines/text are copied into a bounded owner publication and rendered through ROCK's stereo overlay. Collider visualization override selects one exact body from the current complete weapon body catalog and refreshes as a rolling lease. These surfaces are useful for development tools and user-facing diagnostics without building a second VR renderer.
+
+## Configuration editors and interactive panels
+
+Use [Configuration.md](Configuration.md) for the separate catalog/write export,
+[CurrentBehavior.md](CurrentBehavior.md) for attach-only/input/inventory contracts,
+and [PlayerController.md](PlayerController.md) for logical Jump and controller access.
+RPS UI supplies the panel host for interactive configuration and status displays;
+consumers retain their own ImGui context and application policy.

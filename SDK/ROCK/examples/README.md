@@ -22,10 +22,11 @@ They are teaching projects, not production mods. Copy one target, rename its plu
 | `ROCKSDKColliderFocus` | Complete weapon-body selection and a short exact-collider visualization override. |
 | `ROCKSDKExternalContactSensor` | Scoped external-body registration, contact cursors, bounded drains, and deterministic body teardown. |
 | `ROCKSDKForceGrabCommand` | Value-identity force-grab admission, lifecycle polling, timeout cancellation, and terminal results. |
+| `ROCKSDKPowerArmorInteraction` | PA frame and animated bone queries, specific-point commands, terminal-result polling, matching release and owner cleanup; inert until a target/activity is supplied. |
 | `ROCKSDKOffhandLease` | Acquire/renew/release semantics for a short offhand reservation lease. |
 | `ROCKSDKVisualHandOffset` | Presented-hand readback and a short presentation-only visual-authority publication. |
 
-`MinimalProviderConsumer.cpp` remains a single-file integration fragment for projects that already own their F4SE bootstrap. The 16 targets above are complete DLL examples.
+`MinimalProviderConsumer.cpp` remains a single-file integration fragment for projects that already own their F4SE bootstrap. The 17 targets above are complete DLL examples.
 
 Examples that can move physics, reserve input/authority, or replace an overlay
 ship with an explicit `false` activation constant or unresolved value identity.

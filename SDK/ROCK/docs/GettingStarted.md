@@ -104,4 +104,4 @@ Unregistering revokes the owner's callbacks, publications, registrations, reserv
 
 ## Build complete examples
 
-See `examples/README.md`. The example CMake project produces four independent F4SE DLLs and enforces the FO4VR Query/Load contract at configure time.
+See `examples/README.md`. The example CMake project produces seventeen independent F4SE DLLs and enforces the FO4VR Query/Load contract at configure time.

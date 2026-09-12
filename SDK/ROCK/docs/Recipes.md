@@ -144,3 +144,17 @@ Build bounded arrays of `RockProviderDebugOverlayLineV1` and `RockProviderDebugO
 ## Safely hand a touch mechanism to another system
 
 Call `requestTouchGrabYieldV1(ownerToken, scopeToken, targetId, targetGeneration)`. Stop accepting new work for that target immediately, but do not move it yet. Poll slot 84 until phase is `Yielded`; only then begin native/scripted motion. Remove or republish with a new generation to establish the next ownership cycle.
+
+## Inventory transfer and configuration UI
+
+For an inventory shortcut, first require `InventoryForceGrab`, register for
+`InteractionCommands`, and submit a default-initialized force-grab request with
+only `FromPlayerInventory`, an owned consumable/throwable base form ID, `hand=None`
+and current generations. Leave body/distance defaults untouched. Track the
+queued command through its terminal result; do not use or equip the item yourself.
+
+For a settings panel, visit the compiled configuration catalog on a game task,
+copy its borrowed strings, publish a bounded display snapshot to your renderer,
+and queue selected edits back to `setValue` on a game task. Observe applied
+`revision()` changes before refreshing values. See [Configuration.md](Configuration.md)
+and [the UI module](../../UI/README.md).
