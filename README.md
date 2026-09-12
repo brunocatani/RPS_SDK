@@ -63,7 +63,8 @@ you are adapting.
 
 ## Runtime boundaries
 
-ROCK V1 has 95 function pointers (760 bytes on x64), plus the separately
+ROCK V1 has 99 function pointers (792 bytes on x64), including Power Armor
+classification, animated armor-hand queries, and specific-point grab commands, plus the separately
 discovered `GetROCKConfigurationApi` V1 export. PAPER V1 has 50 pointers
 (400 bytes). RPS UI has its own metadata-prefixed V1 table and eight functions.
 None of these version numbers describes the static RPS Framework library.

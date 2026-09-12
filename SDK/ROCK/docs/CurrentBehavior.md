@@ -61,6 +61,20 @@ return the exact drop on failed attachment. A failed rollback must remain a
 reported runtime error rather than being represented as successful handoff.
 Keep the normal cancellation and generation-loss cleanup path.
 
+## Power Armor interaction
+
+Slots 95–98 add generic target/reference details and the Power Armor query/grab
+family. Require the 792-byte PA table extent and the appropriate `TargetDetails`,
+`PowerArmor`, and `InteractionCommands` grants. Classification, frame identity,
+native reference state, and each copied armor-hand pose have independent validity.
+
+Specific-point commands attach a selected player hand to a selected animated
+armor-hand bone and use the existing command result, cancellation, and release
+APIs. Native grip release remains active. Use current hand details to observe
+`AnimatedArmorBone` grips; a past successful command does not prove continued
+attachment. See [the full contract](FeatureGuide.md#power-armor-and-reference-details)
+and the inert `ROCKSDKPowerArmorInteraction` example.
+
 ## Input and UI
 
 The current provider table has 99 slots (792 x64 bytes). Slots 93 and 94 add

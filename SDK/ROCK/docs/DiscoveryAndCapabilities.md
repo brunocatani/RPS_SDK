@@ -48,6 +48,8 @@ Capabilities are owner permissions requested at registration and returned in `gr
 | `WorldRaycasts` | Issue bounded provider-filtered world raycasts in owner callbacks. |
 | `ColliderVisualizationOverride` | Focus debug visualization on one current weapon body. |
 | `PlayerController` | Read the native player-controller value snapshot and request guarded native jumps. |
+| `TargetDetails` | Observe either hand's resolved target and query native reference interaction fields. |
+| `PowerArmor` | Classify Power Armor references and copy their linked frame and animated armor-hand poses; grabs also require `InteractionCommands`. |
 
 Request only what the mod actually uses. Registration can succeed with a subset; the granted mask is authoritative.
 
@@ -86,4 +88,30 @@ compute their member boundaries before reading the pointers. Configuration V1
 is separately discovered through `GetROCKConfigurationApi`, with its own size
 and version validation.
 
-`TargetDetails` permits the generic hand-target and reference-interaction queries. `PowerArmor` permits PA classification, linked-frame and bone-pose queries; specific-point requests also require `InteractionCommands`. Negotiate `ROCK_PROVIDER_API_V1_POWER_ARMOR_TABLE_BYTES` before using these appended functions. Queries require the animation-owner thread; owner frame callbacks provide this boundary. PA commands retain normal result/cancellation semantics, accept native grip release, and release their own attachment when their consumer unregisters.
+## Power Armor and target-detail gates
+
+Slots 95–98 add `getHandTargetDetailsV1`, `queryReferenceInteractionV1`,
+`queryPowerArmorTargetV1`, and `requestPowerArmorGrabV1`. Require
+`ROCK_PROVIDER_API_V1_POWER_ARMOR_TABLE_BYTES` (792 x64 bytes) for the complete
+family. A consumer using only generic queries can calculate the member boundary
+before reading that pointer:
+
+```cpp
+constexpr auto referenceDetailsBytes = static_cast<std::uint32_t>(
+    offsetof(RockProviderApi, queryReferenceInteractionV1) +
+    sizeof(std::declval<RockProviderApi>().queryReferenceInteractionV1));
+```
+
+This boundary is 776 x64 bytes. These additions have capability grants and table
+guards; there is no separate Power Armor feature bit or `supportsPowerArmorV1` helper.
+
+`TargetDetails` permits the generic hand-target and reference-interaction queries.
+`PowerArmor` permits classification, linked-frame and bone-pose queries;
+specific-point requests also require `InteractionCommands`. Request
+`FrameSnapshots` to run the integration in an owner frame callback. Inspect the
+granted mask before using any of these families.
+
+Queries require the animation-owner thread; owner frame callbacks provide this
+boundary. PA commands retain normal result/cancellation semantics, accept native
+grip release, and release their owned attachment after their consumer unregisters.
+See [the integration contract](FeatureGuide.md#power-armor-and-reference-details).

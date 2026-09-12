@@ -24,6 +24,15 @@ Queued force grab, physical release, thrown drop, and cancellation; per-hand inp
 
 Native animation authority, animation phase callbacks, native animation runtime publication, hand/finger visual authority, equipped-weapon handling policy, bounded stereo debug overlays, and exact collider visualization focus.
 
+### Power Armor and reference interaction
+
+Either-hand target details, native open/activation-block/furniture-use readback,
+Power Armor furniture/actor classification, linked frame identity, and copied
+world/frame-local armor-hand bone transforms. A consumer can queue a grab of a
+specific armor hand and observe the resulting `AnimatedArmorBone` surface grip.
+See [Power Armor and reference details](FeatureGuide.md#power-armor-and-reference-details)
+for validity, capability, and cleanup rules.
+
 ### Touch mechanisms and world queries
 
 Scoped fixed-anchor, limited-hinge, and limited-prismatic touch targets support climbable surfaces and physical controls. Owner-callback-only world raycasts provide a bounded provider-filtered query path. A separate guarded request enters FO4VR's native player jump state only after ROCK validates controller identity, lifecycle, generations, and current penetration.

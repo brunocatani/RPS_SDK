@@ -51,3 +51,11 @@ Copy functions never transfer ownership. Provide fixed or otherwise bounded stor
 `RockProviderResultV1` distinguishes expected state such as `NotReady`, `UnsupportedVersion`, `OwnerNotRegistered`, `PermissionDenied`, `WorldNotReady`, `TargetUnavailable`, `HandBusy`, `WrongThread`, and capacity/validation failures. Branch on the enum; do not reduce every non-`Ok` result to a retry.
 
 Queued interaction commands have a second lifecycle. Admission success only returns a command ID. Poll `getInteractionCommandResultV1` until the command reaches a terminal result, or cancel it when the owning feature shuts down.
+
+Power Armor point grabs use this same command lifecycle. Cancellation can race
+execution, so continue observing the terminal result. Success identifies an
+attachment at execution time; native button release or lifecycle loss can end
+it later. Use live hand-target details to reconcile held state. Release a
+remaining grip with a matching-target force-release request, and unregister the
+consumer during teardown so ROCK can retire its command-owned PA attachments.
+See [Power Armor and reference details](FeatureGuide.md#power-armor-and-reference-details).

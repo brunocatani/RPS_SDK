@@ -117,6 +117,21 @@ motion path, or activation policy is no longer current. Clear the retained part
 targets before shutdown. The complete buildable pattern is
 `examples/mods/WeaponPartDriver.cpp`.
 
+## Grab a specific Power Armor hand
+
+Adapt [PowerArmorInteraction.cpp](../examples/mods/PowerArmorInteraction.cpp).
+It is inert until the consumer supplies a selected world reference and activity
+predicate. It queries the selected reference, requires valid PA classification
+and a linked frame, then finds the `LeftArmorHand` pose by enum. The request uses
+that frame's form ID/native handle and the right player hand, with the callback's
+current generation guards.
+
+Keep the returned command ID until terminal completion. After success, reconcile
+the live hand target so native grip release cannot leave stale held state. End
+the activity by cancelling its pending grab or releasing its still-held matching
+frame. Re-arm the activity explicitly before another attempt. Full validity and
+ownership rules are in [the PA guide](FeatureGuide.md#power-armor-and-reference-details).
+
 ## Run a bounded world raycast
 
 ```cpp

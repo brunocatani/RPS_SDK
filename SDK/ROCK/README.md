@@ -2,7 +2,7 @@
 
 ROCK SDK V1 is the public in-process C++ ABI for FO4VR F4SE plugins that need coherent access to ROCK's hand, collision, weapon, input, animation, interaction, and diagnostic systems.
 
-The current append-only V1 table contains 99 function slots. It supports read-only observation, owner-scoped registration, queued interaction commands, bounded control authorities, scoped publications, semantic contact streams, touch mechanisms, raycasts, guarded player-controller access, and shared VR diagnostics without exposing private ROCK runtime classes.
+The current append-only V1 table contains 99 function slots. It supports read-only observation, owner-scoped registration, queued interaction commands, bounded control authorities, scoped publications, semantic contact streams, touch mechanisms, raycasts, guarded player-controller access, Power Armor classification and animated hand-point grabs, and shared VR diagnostics without exposing private ROCK runtime classes.
 
 ## Start here
 
@@ -22,7 +22,7 @@ The current append-only V1 table contains 99 function slots. It supports read-on
 | `docs/PublicApi.md` | Architectural overview and API-family map. |
 | `docs/GettingStarted.md` | Initialization, result codes, registration, callbacks, and teardown. |
 | `docs/RuntimeContract.md` | Threading, lifecycle, generation, pointer, lease, cursor, and command rules. |
-| `docs/DiscoveryAndCapabilities.md` | Descriptor, table extent, 28 capabilities, two feature words, and limits. |
+| `docs/DiscoveryAndCapabilities.md` | Descriptor, table extent, 30 capabilities, two feature words, and limits. |
 | `docs/ApiIndex.md` | Every V1 function pointer in ABI slot order. |
 | `docs/FeatureGuide.md` | What users can build with each subsystem. |
 | `docs/Recipes.md` | Focused call patterns for common integrations. |
@@ -44,3 +44,8 @@ Register with `registerConsumerV1`, retain the returned owner token for the curr
 ## Current source behavior
 
 See [CurrentBehavior.md](docs/CurrentBehavior.md) for the source-verified interaction and compatibility changes as of 2026-09-11.
+
+The [Power Armor integration guide](docs/FeatureGuide.md#power-armor-and-reference-details)
+documents the current classification flags, frame identity, copied bone poses,
+command lifecycle, and native grip release. The complete consumer is
+[PowerArmorInteraction.cpp](examples/mods/PowerArmorInteraction.cpp).

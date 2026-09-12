@@ -11,14 +11,18 @@ namespace
     bool g_attempted = false;
     bool g_held = false;
     bool g_releasing = false;
+    bool g_cancelRequested = false;
     std::uint32_t g_heldFrame = 0;
     std::uint32_t g_worldGeneration = 0;
+    std::uint32_t g_skeletonGeneration = 0;
+    std::uint32_t g_providerGeneration = 0;
     std::uint64_t g_command = 0;
 
     bool start(std::uint64_t) noexcept
     {
-        g_attempted = g_held = g_releasing = false;
+        g_attempted = g_held = g_releasing = g_cancelRequested = false;
         g_command = 0; g_heldFrame = g_worldGeneration = 0;
+        g_skeletonGeneration = g_providerGeneration = 0;
         return true;
     }
 
@@ -32,14 +36,27 @@ namespace
 
     void frame(std::uint64_t owner, const RockProviderFrameSnapshot& snapshot) noexcept
     {
-        if (g_worldGeneration != snapshot.worldGeneration) {
+        if (g_worldGeneration != snapshot.worldGeneration ||
+            g_skeletonGeneration != snapshot.skeletonGeneration ||
+            g_providerGeneration != snapshot.providerGeneration) {
             stop(owner);
             g_worldGeneration = snapshot.worldGeneration;
+            g_skeletonGeneration = snapshot.skeletonGeneration;
+            g_providerGeneration = snapshot.providerGeneration;
         }
+        const bool canWrite = hasLifecycleFlag(snapshot.lifecycleFlags, RockProviderLifecycleFlag::PhysicsWriteAllowed);
         if (g_command) {
             RockProviderInteractionCommandResultV1 result{};
             if (RockProviderApi::inst->getInteractionCommandResultV1(owner, g_command, &result) != RockProviderResultV1::Ok) return;
-            if (result.state == RockProviderInteractionCommandStateV1::Queued) return;
+            if (result.state == RockProviderInteractionCommandStateV1::Queued) {
+                if (!g_releasing && !g_cancelRequested && (!g_activityWantsGrip || !canWrite)) {
+                    const auto cancelled = RockProviderApi::inst->cancelInteractionCommandV1(owner, g_command);
+                    g_cancelRequested = true;
+                    if (cancelled != RockProviderResultV1::Ok)
+                        rock::sdk::example::logWarning("PA cancellation not accepted; continue polling the command");
+                }
+                return;
+            }
             if (result.state == RockProviderInteractionCommandStateV1::Succeeded) {
                 g_held = !g_releasing;
                 g_heldFrame = g_held ? result.targetFormId : 0;
@@ -52,8 +69,24 @@ namespace
                 static_cast<unsigned>(result.state), static_cast<unsigned>(result.failure), result.targetFormId);
             rock::sdk::example::logInfo(text);
             g_command = 0;
+            g_cancelRequested = false;
         }
 
+        // A successful command is historical evidence. Native grip release or
+        // target loss can end the attachment before this activity ends.
+        if (g_held) {
+            RockProviderHandTargetDetailsV1 details{};
+            if (RockProviderApi::inst->getHandTargetDetailsV1(owner, RockProviderHand::Right, &details) != RockProviderResultV1::Ok) return;
+            if (details.handState.phase != RockProviderHandInteractionPhaseV1::Holding ||
+                details.handState.targetFormId != g_heldFrame ||
+                details.powerArmorPoint != RockProviderPowerArmorPointV1::LeftArmorHand ||
+                details.handState.surfaceGripMode != RockProviderSurfaceGripModeV1::AnimatedArmorBone) {
+                g_held = false;
+                g_heldFrame = 0;
+            }
+        }
+
+        if (!canWrite) return;
         if (!g_activityWantsGrip) {
             g_attempted = false;
             if (g_held) {
@@ -78,8 +111,15 @@ namespace
         query.skeletonGeneration = snapshot.skeletonGeneration;
         query.providerGeneration = snapshot.providerGeneration;
         RockProviderPowerArmorTargetV1 target{};
+        constexpr auto requiredFlags =
+            static_cast<std::uint32_t>(RockProviderTargetDetailFlagV1::PowerArmorClassification) |
+            static_cast<std::uint32_t>(RockProviderTargetDetailFlagV1::PowerArmorFrame);
         if (RockProviderApi::inst->queryPowerArmorTargetV1(owner, &query, &target) != RockProviderResultV1::Ok ||
-            !target.frameReference.referenceFormId || !target.points[0].valid) return;
+            (target.flags & requiredFlags) != requiredFlags || !target.frameReference.referenceFormId) return;
+        bool pointValid = false;
+        for (const auto& pose : target.points)
+            if (pose.point == RockProviderPowerArmorPointV1::LeftArmorHand && pose.valid) pointValid = true;
+        if (!pointValid) return;
 
         // The right player hand requests the PA frame's left armor-hand bone.
         // Query both hands/points independently; side names describe the armor.
@@ -92,11 +132,6 @@ namespace
         g_releasing = false;
         (void)RockProviderApi::inst->requestPowerArmorGrabV1(owner, &grab, &g_command);
 
-        RockProviderHandTargetDetailsV1 details{};
-        (void)RockProviderApi::inst->getHandTargetDetailsV1(owner, RockProviderHand::Right, &details);
-        // After success, details.powerArmorPoint identifies the actual grip.
-        // reference.openState and activationBlocked require their validity bits;
-        // neither is a general canActivate verdict.
     }
 }
 
