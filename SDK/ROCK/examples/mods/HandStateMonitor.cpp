@@ -26,7 +26,8 @@ namespace
         if (RockProviderApi::inst->getHandInteractionStateV1(
                 ownerToken,
                 hand,
-                &state) != RockProviderResultV1::Ok) {
+                &state) != RockProviderResultV1::Ok ||
+            !(state.flags & static_cast<std::uint32_t>(RockProviderHandInteractionFlagV1::Valid))) {
             return;
         }
 
@@ -34,13 +35,21 @@ namespace
             ownerToken, &RE::TESForm::GetFormByID<RE::TESObjectREFR> };
         RockProviderResultV1 heldResult{};
         auto* held = hands.GetHeldItem(hand == RockProviderHand::Left, &heldResult);
-        char message[224]{};
+        // Generic occupancy includes native carry. HeldItem resolves loose
+        // references only; it is not a generic occupied/free-hand predicate.
+        const auto has = [&state](RockProviderHandInteractionFlagV1 flag) {
+            return (state.flags & static_cast<std::uint32_t>(flag)) != 0;
+        };
+        char message[288]{};
         std::snprintf(
             message,
             sizeof(message),
-            "%s hand phase=%u targetKind=%u form=%08X body=%08X heldBodies=%u heldRef=%08X heldResult=%u",
+            "%s hand phase=%u nativeCarry=%u rockGrip=%u attachOnly=%u targetKind=%u form=%08X body=%08X heldBodies=%u heldRef=%08X heldResult=%u",
             hand == RockProviderHand::Right ? "Right" : "Left",
             static_cast<std::uint32_t>(state.phase),
+            has(RockProviderHandInteractionFlagV1::NativeWeaponCarry) ? 1u : 0u,
+            has(RockProviderHandInteractionFlagV1::RockGripActive) ? 1u : 0u,
+            has(RockProviderHandInteractionFlagV1::AttachOnly) ? 1u : 0u,
             static_cast<std::uint32_t>(state.targetKind),
             state.targetFormId,
             state.primaryBodyId,
