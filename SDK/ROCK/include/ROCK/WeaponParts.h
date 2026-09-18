@@ -5,7 +5,7 @@
 namespace rock::api::weaponparts {
     inline constexpr InterfaceId kInterfaceId = InterfaceId::WeaponParts;
     inline constexpr std::uint32_t kMajor = 1;
-    inline constexpr std::uint32_t kMinor = 0;
+    inline constexpr std::uint32_t kMinor = 1;
     inline constexpr std::uint32_t kMaxEvidenceDetails = 100;
     inline constexpr std::uint32_t kMaxEvidencePoints = 252;
     inline constexpr std::uint32_t kMaxPoses = 128;
@@ -370,6 +370,8 @@ namespace rock::api::weaponparts {
         Status(ROCK_CALL* copySources)(OwnerToken, std::uint64_t weaponGenerationKey, SourceV1*, std::uint32_t capacity, std::uint32_t* copied, std::uint32_t* total) noexcept;
         Status(ROCK_CALL* copyEvents)(OwnerToken, std::uint64_t afterSequence, EventV1*, std::uint32_t capacity, StreamV1*) noexcept;
         Status(ROCK_CALL* querySourcePose)(OwnerToken, std::uint64_t weaponGenerationKey, std::uint64_t sourceKey, SourcePoseV1*) noexcept;
+        // Added in minor 1. Resolves native hierarchy position without exposing a node address.
+        Status(ROCK_CALL* querySourcePath)(OwnerToken, std::uint64_t weaponGenerationKey, std::uint64_t sourceKey, std::uint64_t* parentKey, std::uint32_t* childIndex) noexcept;
     };
 }
 

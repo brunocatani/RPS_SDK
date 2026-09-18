@@ -1333,7 +1333,7 @@ static_assert(offsetof(rock::api::weaponparts::SourcePoseV1, sourceKey) == 48);
 static_assert(offsetof(rock::api::weaponparts::SourcePoseV1, sourceParentLocal) == 56);
 static_assert(offsetof(rock::api::weaponparts::SourcePoseV1, weaponRootLocal) == 108);
 static_assert(offsetof(rock::api::weaponparts::SourcePoseV1, world) == 160);
-static_assert(sizeof(rock::api::weaponparts::ApiV1) == 136);
+static_assert(sizeof(rock::api::weaponparts::ApiV1) == 144);
 static_assert(alignof(rock::api::weaponparts::ApiV1) == 8);
 static_assert(offsetof(rock::api::weaponparts::ApiV1, queryWeaponContactAtPoint) == 0);
 static_assert(offsetof(rock::api::weaponparts::ApiV1, getWeaponEvidenceDetailCountV1) == 8);
@@ -1352,4 +1352,4 @@ static_assert(offsetof(rock::api::weaponparts::ApiV1, getSample) == 104);
 static_assert(offsetof(rock::api::weaponparts::ApiV1, copySources) == 112);
 static_assert(offsetof(rock::api::weaponparts::ApiV1, copyEvents) == 120);
 static_assert(offsetof(rock::api::weaponparts::ApiV1, querySourcePose) == 128);
-
+static_assert(offsetof(rock::api::weaponparts::ApiV1, querySourcePath) == 136);
