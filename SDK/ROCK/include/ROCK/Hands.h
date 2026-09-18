@@ -5,7 +5,7 @@
 namespace rock::api::hands {
     inline constexpr InterfaceId kInterfaceId = InterfaceId::Hands;
     inline constexpr std::uint32_t kMajor = 1;
-    inline constexpr std::uint32_t kMinor = 0;
+    inline constexpr std::uint32_t kMinor = 1;
     inline constexpr std::uint32_t kFingerLocalTransformCount = 15;
 
 
@@ -63,6 +63,16 @@ namespace rock::api::hands {
 
     struct HeadPoseV1 { std::uint32_t size{sizeof(HeadPoseV1)}; std::uint32_t valid{}; SampleV1 sample{}; Transform transform{}; float forwardWorld[3]{}; };
 
+    // Roles describe ROCK's published physical primary/offhand assignment.
+    // They are independent of temporary firing-grip ownership.
+    struct RolesV1 {
+        std::uint32_t size{sizeof(RolesV1)};
+        std::uint32_t version{1};
+        SampleV1 sample{};
+        Hand primary{Hand::None};
+        Hand offhand{Hand::None};
+    };
+
     // Permission bits are local to this interface major. Discovery grants none.
     enum class PermissionV1 : std::uint32_t { Read=1 };
     inline constexpr std::uint32_t kSupportedPermissions = 1;
@@ -77,6 +87,7 @@ namespace rock::api::hands {
         // Family-local publication identity; compare before combining readbacks.
         Status(ROCK_CALL* getSample)(OwnerToken owner, SampleV1* outSample) noexcept;
         Status(ROCK_CALL* getHeadPose)(OwnerToken, HeadPoseV1*) noexcept;
+        Status(ROCK_CALL* getRoles)(OwnerToken, RolesV1*) noexcept;
     };
 }
 
