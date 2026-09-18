@@ -1,8 +1,17 @@
+#include <ROCK/Animation.h>
+#include <ROCK/Hands.h>
 #include "ExampleRuntime.h"
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::animation::ApiV1* g_animation{};
+    const rock::api::hands::ApiV1* g_hands{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(3,g_animation)==rock::api::Status::Ok &&
+            client.acquire(1,g_hands)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     // This intentionally changes presentation only. Keep it disabled until a
     // mod has a clear visual-authority activation and blending policy.
@@ -10,11 +19,6 @@ namespace
 
     bool g_published{ false };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     bool start(const std::uint64_t) noexcept
     {
@@ -29,9 +33,9 @@ namespace
     void clear(const std::uint64_t ownerToken) noexcept
     {
         if (g_published) {
-            (void)RockProviderApi::inst->clearHandVisualAuthorityV1(
+            (void)g_animation->clearHandVisualAuthorityV1(
                 ownerToken,
-                RockProviderHand::Right);
+                rock::api::Hand::Right);
             g_published = false;
         }
     }
@@ -43,28 +47,28 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
         if (!kEnableVisualOffset ||
             !hasLifecycleFlag(
                 snapshot.lifecycleFlags,
-                RockProviderLifecycleFlag::VisualWriteAllowed)) {
+                rock::api::core::LifecycleFlag::VisualWriteAllowed)) {
             clear(ownerToken);
             return;
         }
 
-        RockProviderHandFrameV1 presented{};
-        if (!RockProviderApi::inst->getPresentedHandFrameV1(
-                RockProviderHand::Right,
-                &presented)) {
+        rock::api::hands::HandFrameV1 presented{};
+        if (!(g_hands->getPresentedHandFrameV1(ownerToken,
+                rock::api::Hand::Right,
+                &presented) == rock::api::Status::Ok)) {
             clear(ownerToken);
             return;
         }
 
-        RockProviderHandVisualAuthorityRequestV1 request{};
-        request.hand = RockProviderHand::Right;
+        rock::api::animation::HandVisualAuthorityRequestV1 request{};
+        request.hand = rock::api::Hand::Right;
         request.flags = static_cast<std::uint32_t>(
-            RockProviderHandVisualAuthorityFlagV1::WorldTransform);
+            rock::api::animation::HandVisualAuthorityFlagV1::WorldTransform);
         request.priority = 50;
         request.worldTransform = presented.transform;
         request.worldTransform.translate[2] += 2.0f;
@@ -72,9 +76,9 @@ namespace
         request.worldGeneration = snapshot.worldGeneration;
         request.skeletonGeneration = snapshot.skeletonGeneration;
         request.providerGeneration = snapshot.providerGeneration;
-        g_published = RockProviderApi::inst->setHandVisualAuthorityV1(
+        g_published = g_animation->setHandVisualAuthorityV1(
                           ownerToken,
-                          &request) == RockProviderResultV1::Ok;
+                          &request) == rock::api::Status::Ok;
     }
 }
 
@@ -85,11 +89,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKVisualHandOffset",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::HandVisualAuthority),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_PRESENTED_HAND_FRAMES_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

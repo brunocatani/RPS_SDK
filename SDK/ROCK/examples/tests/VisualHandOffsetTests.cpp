@@ -9,13 +9,12 @@ bool testVisualHandOffset()
 {
     const auto& example = rock::sdk::example::VisualHandOffsetDefinition();
     if (!checkExample(!kEnableVisualOffset, "VisualHandOffset", "distributed default must be inert")) return false;
-    RockProviderApi api{};
-    api.clearHandVisualAuthorityV1 = [](std::uint64_t owner, RockProviderHand hand) { clearArgumentsValid &= hand == RockProviderHand::Right; return cleared(owner); };
-    RockProviderApi::inst = &api;
+    rock::api::animation::ApiV1 animationApi{};
+    animationApi.clearHandVisualAuthorityV1 = [](std::uint64_t owner, rock::api::Hand hand) noexcept { clearArgumentsValid &= hand == rock::api::Hand::Right; return cleared(owner); };
+    g_animation=&animationApi;
     bool ok = example.onStart(testOwner);
-    RockProviderFrameSnapshot frame{};
+    rock::api::core::SnapshotV1 frame{};
     frame.lifecycleFlags = ~std::uint32_t{0};
-    frame.weaponGenerationKey = 7;
     example.onFrame(testOwner, frame);
     example.onStop(testOwner);
     ok &= checkExample(clearCalls == 0, "VisualHandOffset", "inert callbacks acquire no authority");
@@ -31,6 +30,6 @@ bool testVisualHandOffset()
     ok &= checkExample(clearCalls == 2 && clearArgumentsValid,
         "VisualHandOffset", "lifecycle loss clears authority for the correct owner");
     kEnableVisualOffset = false;
-    RockProviderApi::inst = nullptr;
+    g_animation=nullptr;
     return ok;
 }

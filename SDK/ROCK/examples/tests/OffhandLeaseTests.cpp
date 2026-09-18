@@ -9,13 +9,12 @@ bool testOffhandLease()
 {
     const auto& example = rock::sdk::example::OffhandLeaseDefinition();
     if (!checkExample(!kEnableReservation, "OffhandLease", "distributed default must be inert")) return false;
-    RockProviderApi api{};
-    api.releaseOffhandReservationV1 = &cleared;
-    RockProviderApi::inst = &api;
+    rock::api::grab::ApiV1 grabApi{};
+    grabApi.releaseOffhandReservationV1 = &cleared;
+    g_grab=&grabApi;
     bool ok = example.onStart(testOwner);
-    RockProviderFrameSnapshot frame{};
+    rock::api::core::SnapshotV1 frame{};
     frame.lifecycleFlags = ~std::uint32_t{0};
-    frame.weaponGenerationKey = 7;
     example.onFrame(testOwner, frame);
     example.onStop(testOwner);
     ok &= checkExample(clearCalls == 0, "OffhandLease", "inert callbacks acquire no authority");
@@ -31,6 +30,6 @@ bool testOffhandLease()
     ok &= checkExample(clearCalls == 2 && clearArgumentsValid,
         "OffhandLease", "lifecycle loss clears authority for the correct owner");
     kEnableReservation = false;
-    RockProviderApi::inst = nullptr;
+    g_grab=nullptr;
     return ok;
 }

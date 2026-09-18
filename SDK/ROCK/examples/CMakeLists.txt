@@ -45,6 +45,10 @@ set(ROCK_SDK_EXAMPLE_COMMON
 find_package(spdlog CONFIG REQUIRED)
 
 add_custom_target(ROCKSDKExamplePlugins)
+add_library(ROCKSDKMinimalConsumer OBJECT MinimalProviderConsumer.cpp)
+target_compile_features(ROCKSDKMinimalConsumer PRIVATE cxx_std_20)
+target_include_directories(ROCKSDKMinimalConsumer PRIVATE "${ROCK_SDK_ROOT}/include")
+add_dependencies(ROCKSDKExamplePlugins ROCKSDKMinimalConsumer)
 
 function(add_rock_sdk_example target_name source_path)
   add_library(${target_name} SHARED

@@ -1,115 +1,31 @@
-#include "ROCKProviderApi.h"
-
+#include <ROCK/Client.h>
+#include <ROCK/Collision.h>
 #include <array>
-#include <cstdio>
-
-namespace
-{
-    using namespace rock::provider;
-
-    std::uint64_t g_ownerToken = 0;
-    std::uint64_t g_frameCallbackToken = 0;
-    std::uint64_t g_contactSequence = 0;
-
-    void ROCK_PROVIDER_CALL onRockFrame(const RockProviderFrameSnapshot* snapshot, void*)
-    {
-        if (!snapshot || !hasLifecycleFlag(snapshot->lifecycleFlags, RockProviderLifecycleFlag::PhysicsWriteAllowed)) {
-            return;
-        }
-
-        std::array<RockProviderExternalContactRecordV1, 16> contacts{};
-        RockProviderExternalContactStreamStateV1 streamState{};
-        const auto result = RockProviderApi::inst->copyExternalContactsSinceV1(
-            g_ownerToken,
-            0,
-            g_contactSequence,
-            contacts.data(),
-            static_cast<std::uint32_t>(contacts.size()),
-            &streamState);
-        if (result != RockProviderResultV1::Ok) {
-            return;
-        }
-
-        for (std::uint32_t i = 0; i < streamState.copiedCount; ++i) {
-            const auto& contact = contacts[i];
-            (void)contact;
-        }
-        if (streamState.copiedCount != 0) {
-            g_contactSequence = streamState.lastCopiedSequence;
-        }
-    }
+namespace {
+rock::api::Client client;
+const rock::api::core::ApiV1* core{};
+const rock::api::collision::ApiV1* collision{};
+std::uint64_t callback{}, cursor{};
+void ROCK_CALL frame(const rock::api::core::SnapshotV1* snapshot,void*) {
+    if(!snapshot || !snapshot->providerReady)return;
+    std::array<rock::api::collision::ExternalContactRecordV1,16> contacts{};
+    rock::api::collision::ExternalContactStreamStateV1 stream{};
+    if(collision->copyExternalContactsSinceV1(client.owner(),0,cursor,contacts.data(),static_cast<std::uint32_t>(contacts.size()),&stream)!=rock::api::Status::Ok)return;
+    // Process copied contacts here. Inspect GapBeforeFirstCopied to detect ring loss.
+    if(stream.copiedCount)cursor=stream.lastCopiedSequence;
 }
-
-bool StartRockConsumer()
-{
-    if (RockProviderApi::initialize(
-            ROCK_PROVIDER_API_VERSION,
-            ROCK_PROVIDER_API_V1_EXTERNAL_BODY_SCOPES_TABLE_BYTES) != 0 ||
-        !RockProviderApi::inst) {
-        return false;
+}
+// Pass ROCKAPI_QueryInterfaceV1 resolved from the already loaded ROCK.dll.
+bool StartRockConsumer(rock::api::QueryInterfaceV1 query) noexcept {
+    using rock::api::Status;
+    if(client.connect(query,"MinimalProviderConsumer")!=Status::Ok)return false;
+    if(client.acquire(5,core)!=Status::Ok || client.acquire(1,collision)!=Status::Ok ||
+       core->registerFrameCallbackForOwnerV1(client.owner(),frame,nullptr,&callback)!=Status::Ok) {
+        (void)client.close();return false;
     }
-
-    RockProviderLimitsV1 limits{};
-    if (!RockProviderApi::inst->getProviderLimitsV1(&limits) ||
-        !hasFeatureBitV1(limits.featureBits, RockProviderFeatureBitV1::ConsumerRegistrationV1)) {
-        return false;
-    }
-
-    RockProviderConsumerRegistrationV1 registration{};
-    std::snprintf(registration.modName, sizeof(registration.modName), "MinimalProviderConsumer");
-    registration.requestedCapabilities =
-        static_cast<std::uint32_t>(RockProviderConsumerCapabilityV1::FrameSnapshots) |
-        static_cast<std::uint32_t>(RockProviderConsumerCapabilityV1::ExternalBodies) |
-        static_cast<std::uint32_t>(RockProviderConsumerCapabilityV1::ExternalContacts) |
-        static_cast<std::uint32_t>(RockProviderConsumerCapabilityV1::ExternalBodyScopes);
-
-    RockProviderConsumerHandleV1 handle{};
-    const auto registrationResult =
-        RockProviderApi::inst->registerConsumerV1(&registration, &handle);
-    if (registrationResult != RockProviderResultV1::Ok ||
-        handle.ownerToken == 0 ||
-        (handle.grantedCapabilities & registration.requestedCapabilities) !=
-            registration.requestedCapabilities) {
-        if (handle.ownerToken != 0) {
-            (void)RockProviderApi::inst->unregisterConsumerV1(
-                handle.ownerToken);
-        }
-        return false;
-    }
-
-    g_ownerToken = handle.ownerToken;
-    const auto callbackResult =
-        RockProviderApi::inst->registerFrameCallbackForOwnerV1(
-            g_ownerToken,
-            &onRockFrame,
-            nullptr,
-            &g_frameCallbackToken);
-    if (callbackResult != RockProviderResultV1::Ok ||
-        g_frameCallbackToken == 0) {
-        (void)RockProviderApi::inst->unregisterConsumerV1(g_ownerToken);
-        g_ownerToken = 0;
-        return false;
-    }
-
     return true;
 }
-
-void StopRockConsumer()
-{
-    if (!RockProviderApi::inst) {
-        return;
-    }
-
-    if (g_ownerToken != 0 && g_frameCallbackToken != 0) {
-        (void)RockProviderApi::inst->unregisterFrameCallbackForOwnerV1(
-            g_ownerToken,
-            g_frameCallbackToken);
-        g_frameCallbackToken = 0;
-    }
-
-    if (g_ownerToken != 0) {
-        RockProviderApi::inst->unregisterConsumerV1(g_ownerToken);
-        g_ownerToken = 0;
-    }
-    g_contactSequence = 0;
+bool StopRockConsumer() noexcept {
+    if(client.close()!=rock::api::Status::Ok)return false;
+    callback=0;cursor=0;core=nullptr;collision=nullptr;return true;
 }

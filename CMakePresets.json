@@ -7,7 +7,7 @@
       "generator": "Visual Studio 17 2022",
       "architecture": "x64",
       "toolset": "v143",
-      "binaryDir": "${sourceDir}/build-fast",
+      "binaryDir": "${sourceDir}/build-sdk-fast",
       "cacheVariables": {
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>",
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /external:anglebrackets /external:W0",
@@ -21,7 +21,7 @@
       "name": "custom-tests",
       "inherits": "custom-fast",
       "displayName": "RPS SDK isolated test tree",
-      "binaryDir": "${sourceDir}/build-tests"
+      "binaryDir": "${sourceDir}/build-sdk-tests"
     }
   ],
   "buildPresets": [

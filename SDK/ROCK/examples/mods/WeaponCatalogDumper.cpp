@@ -1,3 +1,6 @@
+#include <ROCK/Weapon.h>
+#include <ROCK/WeaponParts.h>
+#include "WeaponIdentity.h"
 #include "ExampleRuntime.h"
 
 #include <algorithm>
@@ -6,15 +9,17 @@
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::weapon::ApiV1* g_weapon{};
+    const rock::api::weaponparts::ApiV1* g_weaponparts{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(1,g_weapon)==rock::api::Status::Ok &&
+            client.acquire(1,g_weaponparts)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     std::uint64_t g_lastWeaponGeneration{ ~std::uint64_t{ 0 } };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     bool start(const std::uint64_t) noexcept
     {
@@ -28,30 +33,33 @@ namespace
     }
 
     void frame(
-        const std::uint64_t,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const std::uint64_t ownerToken,
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
-        if (snapshot.weaponGenerationKey == g_lastWeaponGeneration) {
+        const auto equipped=rock::sdk::example::weaponIdentity(ownerToken,g_weapon,snapshot);
+        if (equipped.weaponGenerationKey == g_lastWeaponGeneration) {
             return;
         }
-        g_lastWeaponGeneration = snapshot.weaponGenerationKey;
+        g_lastWeaponGeneration = equipped.weaponGenerationKey;
 
-        RockProviderWeaponClassificationV1 classification{};
+        rock::api::weapon::WeaponClassificationV1 classification{};
         const bool classified =
-            RockProviderApi::inst->queryEquippedWeaponClassificationV1(
-                &classification);
+            g_weapon->queryEquippedWeaponClassificationV1(
+                ownerToken,&classification)==rock::api::Status::Ok;
 
-        std::array<RockProviderWeaponEvidenceDetailV1,
-            ROCK_PROVIDER_MAX_WEAPON_EVIDENCE_DETAILS_V1> details{};
-        const auto detailCount = RockProviderApi::inst->copyWeaponEvidenceDetailsV1(
+        std::array<rock::api::weaponparts::WeaponEvidenceDetailV1,
+            rock::api::weaponparts::kMaxEvidenceDetails> details{};
+        std::uint32_t detailCount{};
+        (void)g_weaponparts->copyWeaponEvidenceDetailsV1(ownerToken,
             details.data(),
-            static_cast<std::uint32_t>(details.size()));
+            static_cast<std::uint32_t>(details.size()), &detailCount);
 
-        std::array<RockProviderWeaponEmitterV1,
-            ROCK_PROVIDER_MAX_WEAPON_EMITTERS_V1> emitters{};
-        const auto emitterCount = RockProviderApi::inst->copyWeaponEmittersV1(
+        std::array<rock::api::weapon::WeaponEmitterV1,
+            rock::api::weapon::kMaxEmitters> emitters{};
+        std::uint32_t emitterCount{};
+        (void)g_weapon->copyWeaponEmittersV1(ownerToken,
             emitters.data(),
-            static_cast<std::uint32_t>(emitters.size()));
+            static_cast<std::uint32_t>(emitters.size()), &emitterCount);
 
         char summary[256]{};
         std::snprintf(
@@ -59,8 +67,8 @@ namespace
             sizeof(summary),
             "Weapon=%08X generation=%llu classification=%s sizeClass=%u "
             "evidence=%u emitters=%u",
-            snapshot.weaponFormId,
-            static_cast<unsigned long long>(snapshot.weaponGenerationKey),
+            equipped.weaponFormId,
+            static_cast<unsigned long long>(equipped.weaponGenerationKey),
             classified && classification.valid != 0 ? "valid" : "unavailable",
             static_cast<std::uint32_t>(classification.sizeClass),
             detailCount,
@@ -96,11 +104,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKWeaponCatalogDumper",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::WeaponPartObservability),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_WEAPON_EMITTERS_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

@@ -9,13 +9,12 @@ bool testExternalContactSensor()
 {
     const auto& example = rock::sdk::example::ExternalContactSensorDefinition();
     if (!checkExample(!kEnableSensor, "ExternalContactSensor", "distributed default must be inert")) return false;
-    RockProviderApi api{};
-    api.clearExternalBodiesForScopeV1 = [](std::uint64_t owner, std::uint64_t scope) { clearArgumentsValid &= scope == kScopeToken; return cleared(owner); };
-    RockProviderApi::inst = &api;
+    rock::api::collision::ApiV1 collisionApi{};
+    collisionApi.clearExternalBodiesForScopeV1 = [](std::uint64_t owner, std::uint64_t scope) noexcept { clearArgumentsValid &= scope == kScopeToken; return cleared(owner); };
+    g_collision=&collisionApi;
     bool ok = example.onStart(testOwner);
-    RockProviderFrameSnapshot frame{};
+    rock::api::core::SnapshotV1 frame{};
     frame.lifecycleFlags = ~std::uint32_t{0};
-    frame.weaponGenerationKey = 7;
     example.onFrame(testOwner, frame);
     example.onStop(testOwner);
     ok &= checkExample(clearCalls == 0, "ExternalContactSensor", "inert callbacks acquire no authority");
@@ -31,6 +30,6 @@ bool testExternalContactSensor()
     ok &= checkExample(clearCalls == 2 && clearArgumentsValid,
         "ExternalContactSensor", "lifecycle loss clears authority for the correct owner");
     kEnableSensor = false;
-    RockProviderApi::inst = nullptr;
+    g_collision=nullptr;
     return ok;
 }

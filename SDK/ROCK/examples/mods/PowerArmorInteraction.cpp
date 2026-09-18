@@ -1,9 +1,18 @@
+#include <ROCK/Grab.h>
+#include <ROCK/References.h>
 #include "ExampleRuntime.h"
 #include <cstdio>
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::grab::ApiV1* g_grab{};
+    const rock::api::references::ApiV1* g_references{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(3,g_grab)==rock::api::Status::Ok &&
+            client.acquire(1,g_references)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
     // Inert defaults. Replace with your mod's selected world reference and
     // activity predicate. All queries below run in ROCK's owner frame callback.
     std::uint32_t g_selectedReference = 0;
@@ -28,13 +37,13 @@ namespace
 
     void stop(std::uint64_t owner) noexcept
     {
-        if (g_command) (void)RockProviderApi::inst->cancelInteractionCommandV1(owner, g_command);
+        if (g_command) (void)g_grab->cancelInteractionCommandV1(owner, g_command);
         // The runtime unregisters this owner after stop; ROCK releases any
         // successful PA attachment owned by it. Manual grips remain independent.
         (void)start(owner);
     }
 
-    void frame(std::uint64_t owner, const RockProviderFrameSnapshot& snapshot) noexcept
+    void frame(std::uint64_t owner, const rock::api::core::SnapshotV1& snapshot) noexcept
     {
         if (g_worldGeneration != snapshot.worldGeneration ||
             g_skeletonGeneration != snapshot.skeletonGeneration ||
@@ -44,24 +53,24 @@ namespace
             g_skeletonGeneration = snapshot.skeletonGeneration;
             g_providerGeneration = snapshot.providerGeneration;
         }
-        const bool canWrite = hasLifecycleFlag(snapshot.lifecycleFlags, RockProviderLifecycleFlag::PhysicsWriteAllowed);
+        const bool canWrite = hasLifecycleFlag(snapshot.lifecycleFlags, rock::api::core::LifecycleFlag::PhysicsWriteAllowed);
         if (g_command) {
-            RockProviderInteractionCommandResultV1 result{};
-            if (RockProviderApi::inst->getInteractionCommandResultV1(owner, g_command, &result) != RockProviderResultV1::Ok) return;
-            if (result.state == RockProviderInteractionCommandStateV1::Queued) {
+            rock::api::grab::InteractionCommandResultV1 result{};
+            if (g_grab->getInteractionCommandResultV1(owner, g_command, &result) != rock::api::Status::Ok) return;
+            if (result.state == rock::api::grab::InteractionCommandStateV1::Queued) {
                 if (!g_releasing && !g_cancelRequested && (!g_activityWantsGrip || !canWrite)) {
-                    const auto cancelled = RockProviderApi::inst->cancelInteractionCommandV1(owner, g_command);
+                    const auto cancelled = g_grab->cancelInteractionCommandV1(owner, g_command);
                     g_cancelRequested = true;
-                    if (cancelled != RockProviderResultV1::Ok)
+                    if (cancelled != rock::api::Status::Ok)
                         rock::sdk::example::logWarning("PA cancellation not accepted; continue polling the command");
                 }
                 return;
             }
-            if (result.state == RockProviderInteractionCommandStateV1::Succeeded) {
+            if (result.state == rock::api::grab::InteractionCommandStateV1::Succeeded) {
                 g_held = !g_releasing;
                 g_heldFrame = g_held ? result.targetFormId : 0;
-            } else if (g_releasing && (result.failure == RockProviderInteractionFailureV1::HandNotHolding ||
-                       result.failure == RockProviderInteractionFailureV1::HeldObjectMismatch)) {
+            } else if (g_releasing && (result.failure == rock::api::grab::InteractionFailureV1::HandNotHolding ||
+                       result.failure == rock::api::grab::InteractionFailureV1::HeldObjectMismatch)) {
                 g_held = false;
             }
             char text[128]{};
@@ -75,12 +84,12 @@ namespace
         // A successful command is historical evidence. Native grip release or
         // target loss can end the attachment before this activity ends.
         if (g_held) {
-            RockProviderHandTargetDetailsV1 details{};
-            if (RockProviderApi::inst->getHandTargetDetailsV1(owner, RockProviderHand::Right, &details) != RockProviderResultV1::Ok) return;
-            if (details.handState.phase != RockProviderHandInteractionPhaseV1::Holding ||
+            rock::api::grab::HandTargetDetailsV1 details{};
+            if (g_grab->getHandTargetDetailsV1(owner, rock::api::Hand::Right, &details) != rock::api::Status::Ok) return;
+            if (details.handState.phase != rock::api::grab::HandInteractionPhaseV1::Holding ||
                 details.handState.targetFormId != g_heldFrame ||
-                details.powerArmorPoint != RockProviderPowerArmorPointV1::LeftArmorHand ||
-                details.handState.surfaceGripMode != RockProviderSurfaceGripModeV1::AnimatedArmorBone) {
+                details.powerArmorPoint != rock::api::PowerArmorPointV1::LeftArmorHand ||
+                details.handState.surfaceGripMode != rock::api::grab::SurfaceGripModeV1::AnimatedArmorBone) {
                 g_held = false;
                 g_heldFrame = 0;
             }
@@ -90,47 +99,49 @@ namespace
         if (!g_activityWantsGrip) {
             g_attempted = false;
             if (g_held) {
-                RockProviderForceReleaseRequestV1 release{};
-                release.hand = RockProviderHand::Right;
+                rock::api::grab::ForceReleaseRequestV1 release{};
+                release.hand = rock::api::Hand::Right;
                 release.targetFormId = g_heldFrame;
-                release.flags = static_cast<std::uint32_t>(RockProviderForceReleaseFlagV1::RequireMatchingTarget);
+                release.flags = static_cast<std::uint32_t>(rock::api::grab::ForceReleaseFlagV1::RequireMatchingTarget);
                 release.worldGeneration = snapshot.worldGeneration;
                 release.skeletonGeneration = snapshot.skeletonGeneration;
                 release.providerGeneration = snapshot.providerGeneration;
                 g_releasing = true;
-                (void)RockProviderApi::inst->requestForceReleaseV1(owner, &release, &g_command);
+                (void)g_grab->requestForceReleaseV1(owner, &release, &g_command);
             }
             return;
         }
         if (!g_selectedReference || g_attempted || g_held) return;
         g_attempted = true;
 
-        RockProviderReferenceQueryV1 query{};
+        rock::api::references::ReferenceQueryV1 query{};
         query.referenceFormId = g_selectedReference;
         query.worldGeneration = snapshot.worldGeneration;
         query.skeletonGeneration = snapshot.skeletonGeneration;
         query.providerGeneration = snapshot.providerGeneration;
-        RockProviderPowerArmorTargetV1 target{};
+        rock::api::references::PowerArmorTargetV1 target{};
         constexpr auto requiredFlags =
-            static_cast<std::uint32_t>(RockProviderTargetDetailFlagV1::PowerArmorClassification) |
-            static_cast<std::uint32_t>(RockProviderTargetDetailFlagV1::PowerArmorFrame);
-        if (RockProviderApi::inst->queryPowerArmorTargetV1(owner, &query, &target) != RockProviderResultV1::Ok ||
+            static_cast<std::uint32_t>(rock::api::references::TargetDetailFlagV1::PowerArmorClassification) |
+            static_cast<std::uint32_t>(rock::api::references::TargetDetailFlagV1::PowerArmorFrame);
+        if (g_references->queryPowerArmorTargetV1(owner, &query, &target) != rock::api::Status::Ok ||
             (target.flags & requiredFlags) != requiredFlags || !target.frameReference.referenceFormId) return;
         bool pointValid = false;
         for (const auto& pose : target.points)
-            if (pose.point == RockProviderPowerArmorPointV1::LeftArmorHand && pose.valid) pointValid = true;
+            if (pose.point == rock::api::PowerArmorPointV1::LeftArmorHand && pose.valid) pointValid = true;
         if (!pointValid) return;
 
         // The right player hand requests the PA frame's left armor-hand bone.
         // Query both hands/points independently; side names describe the armor.
-        RockProviderPowerArmorGrabRequestV1 grab{};
-        grab.target = query;
+        rock::api::grab::PowerArmorGrabRequestV1 grab{};
+        grab.target.worldGeneration=query.worldGeneration;
+        grab.target.skeletonGeneration=query.skeletonGeneration;
+        grab.target.providerGeneration=query.providerGeneration;
         grab.target.referenceFormId = target.frameReference.referenceFormId;
         grab.target.referenceNativeHandle = target.frameReference.referenceNativeHandle;
-        grab.hand = RockProviderHand::Right;
-        grab.point = RockProviderPowerArmorPointV1::LeftArmorHand;
+        grab.hand = rock::api::Hand::Right;
+        grab.point = rock::api::PowerArmorPointV1::LeftArmorHand;
         g_releasing = false;
-        (void)RockProviderApi::inst->requestPowerArmorGrabV1(owner, &grab, &g_command);
+        (void)g_grab->requestPowerArmorGrabV1(owner, &grab, &g_command);
 
     }
 }
@@ -142,12 +153,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKPowerArmorInteraction",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                static_cast<std::uint32_t>(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                static_cast<std::uint32_t>(provider::RockProviderConsumerCapabilityV1::TargetDetails) |
-                static_cast<std::uint32_t>(provider::RockProviderConsumerCapabilityV1::PowerArmor) |
-                static_cast<std::uint32_t>(provider::RockProviderConsumerCapabilityV1::InteractionCommands),
-            .minimumTableBytes = provider::ROCK_PROVIDER_API_V1_POWER_ARMOR_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start, .onStop = &stop, .onFrame = &frame,
         };
         return value;

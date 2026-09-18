@@ -1,18 +1,25 @@
+#include <ROCK/Collision.h>
+#include <ROCK/Diagnostics.h>
+#include <ROCK/Weapon.h>
 #include "ExampleRuntime.h"
 
 #include <array>
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::collision::ApiV1* g_collision{};
+    const rock::api::diagnostics::ApiV1* g_diagnostics{};
+    const rock::api::weapon::ApiV1* g_weapon{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(1,g_collision)==rock::api::Status::Ok &&
+            client.acquire(3,g_diagnostics)==rock::api::Status::Ok &&
+            client.acquire(1,g_weapon)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     constexpr float kMaximumDistanceGame = 4096.0f;
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     bool start(const std::uint64_t) noexcept
     {
@@ -21,7 +28,7 @@ namespace
 
     void clear(const std::uint64_t ownerToken) noexcept
     {
-        (void)RockProviderApi::inst->clearDebugOverlayV1(ownerToken);
+        (void)g_diagnostics->clearDebugOverlayV1(ownerToken);
     }
 
     void stop(const std::uint64_t ownerToken) noexcept
@@ -31,28 +38,28 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
         if (!hasLifecycleFlag(
                 snapshot.lifecycleFlags,
-                RockProviderLifecycleFlag::WorldAvailable) ||
+                rock::api::core::LifecycleFlag::WorldAvailable) ||
             !hasLifecycleFlag(
                 snapshot.lifecycleFlags,
-                RockProviderLifecycleFlag::VisualWriteAllowed)) {
+                rock::api::core::LifecycleFlag::VisualWriteAllowed)) {
             clear(ownerToken);
             return;
         }
 
-        RockProviderEquippedWeaponGripStateV1 weapon{};
-        if (!RockProviderApi::inst->getEquippedWeaponGripStateV1(
+        rock::api::weapon::EquippedWeaponGripStateV1 weapon{};
+        if (!(g_weapon->getEquippedWeaponGripStateV1(
                 ownerToken,
-                &weapon) ||
+                &weapon) == rock::api::Status::Ok) ||
             weapon.weaponGenerationKey == 0) {
             clear(ownerToken);
             return;
         }
 
-        RockProviderWorldRaycastRequestV1 request{};
+        rock::api::collision::WorldRaycastRequestV1 request{};
         request.startGame = weapon.muzzleOriginGame;
         request.directionGame = weapon.muzzleDirectionGame;
         request.maxDistanceGame = kMaximumDistanceGame;
@@ -60,16 +67,16 @@ namespace
         request.skeletonGeneration = snapshot.skeletonGeneration;
         request.providerGeneration = snapshot.providerGeneration;
 
-        RockProviderWorldRaycastResultV1 result{};
-        if (RockProviderApi::inst->queryWorldRaycastV1(
+        rock::api::collision::WorldRaycastResultV1 result{};
+        if (g_collision->queryWorldRaycastV1(
                 ownerToken,
                 &request,
-                &result) != RockProviderResultV1::Ok) {
+                &result) != rock::api::Status::Ok) {
             clear(ownerToken);
             return;
         }
 
-        std::array<RockProviderDebugOverlayLineV1, 2> lines{};
+        std::array<rock::api::diagnostics::DebugOverlayLineV1, 2> lines{};
         auto& ray = lines[0];
         ray.startGame[0] = request.startGame.x;
         ray.startGame[1] = request.startGame.y;
@@ -97,14 +104,14 @@ namespace
             normal.color[3] = 1.0f;
         }
 
-        RockProviderDebugOverlayPublicationV1 publication{};
+        rock::api::diagnostics::DebugOverlayPublicationV1 publication{};
         publication.lineCount = lineCount;
         publication.lines = lines.data();
         publication.worldGeneration = snapshot.worldGeneration;
         publication.skeletonGeneration = snapshot.skeletonGeneration;
         publication.providerGeneration = snapshot.providerGeneration;
         publication.leaseFrames = 2;
-        (void)RockProviderApi::inst->publishDebugOverlayV1(
+        (void)g_diagnostics->publishDebugOverlayV1(
             ownerToken,
             &publication);
     }
@@ -117,13 +124,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKMuzzleRayVisualizer",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::EquippedWeaponGripState) |
-                capability(provider::RockProviderConsumerCapabilityV1::WorldRaycasts) |
-                capability(provider::RockProviderConsumerCapabilityV1::DebugOverlayPublication),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_WORLD_RAYCASTS_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

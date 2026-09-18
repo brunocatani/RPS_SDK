@@ -1,3 +1,4 @@
+#include <ROCK/Touch.h>
 #include "ExampleRuntime.h"
 
 #include <array>
@@ -5,7 +6,12 @@
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::touch::ApiV1* g_touch{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(3,g_touch)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     constexpr std::uint64_t kSurfaceScope{ 0x5355524641434501ull };
     constexpr std::uint64_t kRightSurfaceTarget{ 0x5355524652494748ull };
@@ -18,14 +24,9 @@ namespace
     std::array<std::uint64_t, 2> g_lastStateSequences{};
     bool g_scopePublished{ false };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     constexpr std::uint32_t targetFlag(
-        const RockProviderTouchGrabTargetFlagV1 value) noexcept
+        const rock::api::touch::TouchGrabTargetFlagV1 value) noexcept
     {
         return static_cast<std::uint32_t>(value);
     }
@@ -33,7 +34,7 @@ namespace
     void clearScope(const std::uint64_t ownerToken) noexcept
     {
         if (g_scopePublished) {
-            (void)RockProviderApi::inst->clearTouchGrabTargetsForScopeV1(
+            (void)g_touch->clearTouchGrabTargetsForScopeV1(
                 ownerToken,
                 kSurfaceScope);
             g_scopePublished = false;
@@ -58,14 +59,14 @@ namespace
 
     void reportTransitions(const std::uint64_t ownerToken) noexcept
     {
-        std::array<RockProviderTouchGrabStateV1, 2> states{};
+        std::array<rock::api::touch::TouchGrabStateV1, 2> states{};
         std::uint32_t stateCount{ 0 };
-        if (RockProviderApi::inst->copyTouchGrabStatesForScopeV1(
+        if (g_touch->copyTouchGrabStatesForScopeV1(
                 ownerToken,
                 kSurfaceScope,
                 states.data(),
                 static_cast<std::uint32_t>(states.size()),
-                &stateCount) != RockProviderResultV1::Ok) {
+                &stateCount) != rock::api::Status::Ok) {
             return;
         }
 
@@ -92,11 +93,11 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
         if (!hasLifecycleFlag(
                 snapshot.lifecycleFlags,
-                RockProviderLifecycleFlag::PhysicsWriteAllowed)) {
+                rock::api::core::LifecycleFlag::PhysicsWriteAllowed)) {
             clearScope(ownerToken);
             return;
         }
@@ -114,28 +115,28 @@ namespace
             g_lastStateSequences = {};
         }
 
-        std::array<RockProviderTouchGrabTargetV1, 2> targets{};
+        std::array<rock::api::touch::TouchGrabTargetV1, 2> targets{};
         targets[0].targetId = kRightSurfaceTarget;
         targets[0].flags =
-            targetFlag(RockProviderTouchGrabTargetFlagV1::AllowRightHand) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::MatchAnyBody) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::FallbackOnly) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::ExcludePowerArmor) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::MatchStaticMotion) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::MatchKeyframedMotion);
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::AllowRightHand) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::MatchAnyBody) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::FallbackOnly) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::ExcludePowerArmor) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::MatchStaticMotion) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::MatchKeyframedMotion);
         targets[1] = targets[0];
         targets[1].targetId = kLeftSurfaceTarget;
         targets[1].flags =
-            targetFlag(RockProviderTouchGrabTargetFlagV1::AllowLeftHand) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::MatchAnyBody) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::FallbackOnly) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::ExcludePowerArmor) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::MatchStaticMotion) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::MatchKeyframedMotion);
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::AllowLeftHand) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::MatchAnyBody) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::FallbackOnly) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::ExcludePowerArmor) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::MatchStaticMotion) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::MatchKeyframedMotion);
 
         for (auto& target : targets) {
             target.targetGeneration = g_targetGeneration;
-            target.kind = RockProviderTouchGrabKindV1::FixedAnchor;
+            target.kind = rock::api::touch::TouchGrabKindV1::FixedAnchor;
             target.allowedLayerMask = ~std::uint64_t{ 0 };
             target.leaseFrames = 2;
             target.worldGeneration = snapshot.worldGeneration;
@@ -143,12 +144,12 @@ namespace
             target.providerGeneration = snapshot.providerGeneration;
         }
 
-        const auto result = RockProviderApi::inst->setTouchGrabTargetsForScopeV1(
+        const auto result = g_touch->setTouchGrabTargetsForScopeV1(
             ownerToken,
             kSurfaceScope,
             targets.data(),
             static_cast<std::uint32_t>(targets.size()));
-        g_scopePublished = result == RockProviderResultV1::Ok;
+        g_scopePublished = result == rock::api::Status::Ok;
         if (g_scopePublished) {
             reportTransitions(ownerToken);
         }
@@ -162,11 +163,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKSurfaceClimber",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::TouchGrabTargets),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_TOUCH_GRAB_TARGETS_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

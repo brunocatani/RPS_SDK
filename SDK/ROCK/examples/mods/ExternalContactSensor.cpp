@@ -1,3 +1,4 @@
+#include <ROCK/Collision.h>
 #include "ExampleRuntime.h"
 
 #include <array>
@@ -5,7 +6,12 @@
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::collision::ApiV1* g_collision{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(3,g_collision)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     // Supply a live external Havok body's current ID and generation from your
     // own runtime. The SDK example deliberately has no engine-specific resolver.
@@ -17,16 +23,11 @@ namespace
     std::uint64_t g_cursor{ 0 };
     bool g_registered{ false };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     void clear(const std::uint64_t ownerToken) noexcept
     {
         if (g_registered) {
-            (void)RockProviderApi::inst->clearExternalBodiesForScopeV1(
+            (void)g_collision->clearExternalBodiesForScopeV1(
                 ownerToken,
                 kScopeToken);
             g_registered = false;
@@ -52,44 +53,44 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
         if (!kEnableSensor || kExternalBodyId == 0x7FFF'FFFF ||
             !hasLifecycleFlag(
                 snapshot.lifecycleFlags,
-                RockProviderLifecycleFlag::WorldAvailable)) {
+                rock::api::core::LifecycleFlag::WorldAvailable)) {
             clear(ownerToken);
             return;
         }
 
         if (!g_registered) {
-            RockProviderExternalBodyRegistration body{};
+            rock::api::collision::ExternalBodyRegistration body{};
             body.bodyId = kExternalBodyId;
-            body.ownerToken = ownerToken;
+            body.worldGeneration = snapshot.worldGeneration;
             body.generation = kExternalBodyGeneration;
-            body.role = RockProviderExternalBodyRole::ActorRagdollBone;
+            body.role = rock::api::collision::ExternalBodyRole::ActorRagdollBone;
             body.contactPolicy =
-                RockProviderExternalBodyContactPolicy::ReportAllSourceKinds;
+                rock::api::collision::ExternalBodyContactPolicy::ReportAllSourceKinds;
             g_registered =
-                RockProviderApi::inst->registerExternalBodiesForScopeV1(
+                g_collision->registerExternalBodiesForScopeV1(
                     ownerToken,
                     kScopeToken,
                     &body,
-                    1) == RockProviderResultV1::Ok;
+                    1) == rock::api::Status::Ok;
             if (!g_registered) {
                 return;
             }
         }
 
-        std::array<RockProviderExternalContactRecordV1, 16> contacts{};
-        RockProviderExternalContactStreamStateV1 stream{};
-        if (RockProviderApi::inst->copyExternalContactsSinceV1(
+        std::array<rock::api::collision::ExternalContactRecordV1, 16> contacts{};
+        rock::api::collision::ExternalContactStreamStateV1 stream{};
+        if (g_collision->copyExternalContactsSinceV1(
                 ownerToken,
                 kScopeToken,
                 g_cursor,
                 contacts.data(),
                 static_cast<std::uint32_t>(contacts.size()),
-                &stream) != RockProviderResultV1::Ok) {
+                &stream) != rock::api::Status::Ok) {
             return;
         }
 
@@ -120,13 +121,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKExternalContactSensor",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::ExternalBodies) |
-                capability(provider::RockProviderConsumerCapabilityV1::ExternalContacts) |
-                capability(provider::RockProviderConsumerCapabilityV1::ExternalBodyScopes),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_EXTERNAL_BODY_SCOPES_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

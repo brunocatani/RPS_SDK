@@ -9,13 +9,12 @@ bool testTouchMechanism()
 {
     const auto& example = rock::sdk::example::TouchMechanismDefinition();
     if (!checkExample(!kEnableMechanism, "TouchMechanism", "distributed default must be inert")) return false;
-    RockProviderApi api{};
-    api.clearTouchGrabTargetsForScopeV1 = [](std::uint64_t owner, std::uint64_t scope) { clearArgumentsValid &= scope == kScopeToken; return cleared(owner); };
-    RockProviderApi::inst = &api;
+    rock::api::touch::ApiV1 touchApi{};
+    touchApi.clearTouchGrabTargetsForScopeV1 = [](std::uint64_t owner, std::uint64_t scope) noexcept { clearArgumentsValid &= scope == kScopeToken; return cleared(owner); };
+    g_touch=&touchApi;
     bool ok = example.onStart(testOwner);
-    RockProviderFrameSnapshot frame{};
+    rock::api::core::SnapshotV1 frame{};
     frame.lifecycleFlags = ~std::uint32_t{0};
-    frame.weaponGenerationKey = 7;
     example.onFrame(testOwner, frame);
     example.onStop(testOwner);
     ok &= checkExample(clearCalls == 0, "TouchMechanism", "inert callbacks acquire no authority");
@@ -31,6 +30,6 @@ bool testTouchMechanism()
     ok &= checkExample(clearCalls == 2 && clearArgumentsValid,
         "TouchMechanism", "lifecycle loss clears authority for the correct owner");
     kEnableMechanism = false;
-    RockProviderApi::inst = nullptr;
+    g_touch=nullptr;
     return ok;
 }

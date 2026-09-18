@@ -14,10 +14,9 @@ namespace {
     inline unsigned clearCalls = 0;
     inline bool clearArgumentsValid = true;
     constexpr std::uint64_t testOwner = 42;
-    inline rock::provider::RockProviderResultV1 cleared(std::uint64_t owner)
-    {
+    inline rock::api::Status cleared(std::uint64_t owner) noexcept {
         ++clearCalls;
         clearArgumentsValid &= owner == testOwner;
-        return rock::provider::RockProviderResultV1::Ok;
+        return rock::api::Status::Ok;
     }
 }

@@ -4,46 +4,23 @@
 
 namespace
 {
-    using namespace rock::provider;
+    rock::api::QueryInterfaceV1 g_query{};
+    bool connect(rock::api::Client&,rock::api::QueryInterfaceV1 query) noexcept {g_query=query;return query!=nullptr;}
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
+    using rock::sdk::example::hasLifecycleFlag;
 
-    bool start(const std::uint64_t) noexcept
-    {
-        RockProviderLimitsV1 base{};
-        RockProviderLimitsExtV1 extended{};
-        if (!RockProviderApi::inst->getProviderLimitsV1(&base) ||
-            !RockProviderApi::inst->getProviderLimitsExtV1(&extended)) {
-            rock::sdk::example::logWarning("Provider limits are unavailable");
-            return false;
+
+
+    bool start(const std::uint64_t) noexcept {
+        for(std::uint32_t id=1;id<=13;++id) {
+            const rock::api::InterfaceDescriptorV1* descriptor{};
+            const auto status=g_query(static_cast<rock::api::InterfaceId>(id),1,0,sizeof(void*),&descriptor);
+            char message[160]{};
+            if(status==rock::api::Status::Ok && descriptor)
+                std::snprintf(message,sizeof(message),"Interface=%u major=%u minor=%u bytes=%u",id,descriptor->major,descriptor->minor,descriptor->tableByteSize);
+            else std::snprintf(message,sizeof(message),"Interface=%u unavailable status=%u",id,static_cast<unsigned>(status));
+            rock::sdk::example::logInfo(message);
         }
-
-        const auto frameBytes = RockProviderApi::inst->getPublicStructureSizeV1(
-            RockProviderStructureIdV1::FrameSnapshot);
-        const auto tableBytes = RockProviderApi::inst->getPublicStructureSizeV1(
-            RockProviderStructureIdV1::ApiFunctionTable);
-
-        char message[320]{};
-        std::snprintf(
-            message,
-            sizeof(message),
-            "API bytes=%u table bytes=%u frame bytes=%u consumers=%u callbacks=%u "
-            "partDrives=%u touchTargets=%u raycastsPerFrame=%u featureBits=%08X:%08X",
-            base.providerApiByteSize,
-            tableBytes,
-            frameBytes,
-            extended.maxConsumers,
-            extended.maxFrameCallbacks,
-            extended.maxWeaponPartDrives,
-            extended.maxTouchGrabTargets,
-            extended.maxWorldRaycastsPerOwnerPerFrame,
-            extended.featureBits2,
-            extended.featureBits);
-        rock::sdk::example::logInfo(message);
         return true;
     }
 
@@ -51,7 +28,7 @@ namespace
 
     void frame(
         const std::uint64_t,
-        const RockProviderFrameSnapshot&) noexcept
+        const rock::api::core::SnapshotV1&) noexcept
     {}
 }
 
@@ -62,10 +39,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKCapabilityReporter",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_EXTENDED_LIMITS_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

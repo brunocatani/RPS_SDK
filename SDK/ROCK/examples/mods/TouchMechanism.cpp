@@ -1,3 +1,4 @@
+#include <ROCK/Touch.h>
 #include "ExampleRuntime.h"
 
 #include <array>
@@ -5,7 +6,12 @@
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::touch::ApiV1* g_touch{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(3,g_touch)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     // Replace these values from your own mechanism resolver, then opt in.
     bool kEnableMechanism = false;
@@ -17,14 +23,9 @@ namespace
     std::uint64_t g_lastSequence{ 0 };
     bool g_published{ false };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     constexpr std::uint32_t targetFlag(
-        const RockProviderTouchGrabTargetFlagV1 value) noexcept
+        const rock::api::touch::TouchGrabTargetFlagV1 value) noexcept
     {
         return static_cast<std::uint32_t>(value);
     }
@@ -32,7 +33,7 @@ namespace
     void clear(const std::uint64_t ownerToken) noexcept
     {
         if (g_published) {
-            (void)RockProviderApi::inst->clearTouchGrabTargetsForScopeV1(
+            (void)g_touch->clearTouchGrabTargetsForScopeV1(
                 ownerToken,
                 kScopeToken);
             g_published = false;
@@ -58,25 +59,25 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
         if (!kEnableMechanism || kMechanismBodyId == 0x7FFF'FFFF ||
             !hasLifecycleFlag(
                 snapshot.lifecycleFlags,
-                RockProviderLifecycleFlag::PhysicsWriteAllowed)) {
+                rock::api::core::LifecycleFlag::PhysicsWriteAllowed)) {
             clear(ownerToken);
             return;
         }
 
-        RockProviderTouchGrabTargetV1 target{};
+        rock::api::touch::TouchGrabTargetV1 target{};
         target.targetId = kTargetId;
         target.targetGeneration = g_targetGeneration;
-        target.kind = RockProviderTouchGrabKindV1::LimitedPrismatic;
+        target.kind = rock::api::touch::TouchGrabKindV1::LimitedPrismatic;
         target.flags =
-            targetFlag(RockProviderTouchGrabTargetFlagV1::AllowRightHand) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::AllowLeftHand) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::MatchKeyframedMotion) |
-            targetFlag(RockProviderTouchGrabTargetFlagV1::MatchDynamicMotion);
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::AllowRightHand) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::AllowLeftHand) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::MatchKeyframedMotion) |
+            targetFlag(rock::api::touch::TouchGrabTargetFlagV1::MatchDynamicMotion);
         target.bodyId = kMechanismBodyId;
         target.leaseFrames = 2;
         target.worldGeneration = snapshot.worldGeneration;
@@ -88,23 +89,23 @@ namespace
         target.maximumCoordinate = 10.0f;
         target.currentCoordinate = 0.0f;
 
-        g_published = RockProviderApi::inst->setTouchGrabTargetsForScopeV1(
+        g_published = g_touch->setTouchGrabTargetsForScopeV1(
                           ownerToken,
                           kScopeToken,
                           &target,
-                          1) == RockProviderResultV1::Ok;
+                          1) == rock::api::Status::Ok;
         if (!g_published) {
             return;
         }
 
-        std::array<RockProviderTouchGrabStateV1, 1> states{};
+        std::array<rock::api::touch::TouchGrabStateV1, 1> states{};
         std::uint32_t stateCount{ 0 };
-        if (RockProviderApi::inst->copyTouchGrabStatesForScopeV1(
+        if (g_touch->copyTouchGrabStatesForScopeV1(
                 ownerToken,
                 kScopeToken,
                 states.data(),
                 static_cast<std::uint32_t>(states.size()),
-                &stateCount) != RockProviderResultV1::Ok ||
+                &stateCount) != rock::api::Status::Ok ||
             stateCount == 0 || states[0].sequence == g_lastSequence) {
             return;
         }
@@ -130,11 +131,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKTouchMechanism",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::TouchGrabTargets),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_TOUCH_GRAB_TARGETS_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

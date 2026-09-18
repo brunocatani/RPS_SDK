@@ -1,3 +1,4 @@
+#include <ROCK/Grab.h>
 #include "ExampleRuntime.h"
 
 #include <RE/Fallout.h>
@@ -6,7 +7,12 @@
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::grab::ApiV1* g_grab{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(3,g_grab)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     // Set this to a world reference owned/resolved by your mod. The helper
     // borrows its pointer only to read formID; ROCK resolves that value later.
@@ -18,11 +24,6 @@ namespace
     std::uint32_t g_worldGeneration{ 0 };
     bool g_attempted{ false };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     bool start(const std::uint64_t) noexcept
     {
@@ -40,7 +41,7 @@ namespace
     void stop(const std::uint64_t ownerToken) noexcept
     {
         if (g_commandId != 0) {
-            (void)RockProviderApi::inst->cancelInteractionCommandV1(
+            (void)g_grab->cancelInteractionCommandV1(
                 ownerToken,
                 g_commandId);
         }
@@ -50,11 +51,11 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
         if (snapshot.worldGeneration != g_worldGeneration) {
             if (g_commandId != 0) {
-                (void)RockProviderApi::inst->cancelInteractionCommandV1(
+                (void)g_grab->cancelInteractionCommandV1(
                     ownerToken,
                     g_commandId);
             }
@@ -66,23 +67,26 @@ namespace
         if (kTargetFormId == 0 ||
             !hasLifecycleFlag(
                 snapshot.lifecycleFlags,
-                RockProviderLifecycleFlag::PhysicsWriteAllowed)) {
+                rock::api::core::LifecycleFlag::PhysicsWriteAllowed)) {
             return;
         }
 
         if (g_commandId == 0 && !g_attempted) {
             g_attempted = true;
-            RockHandItems<RE::TESObjectREFR> hands{
-                ownerToken, &RE::TESForm::GetFormByID<RE::TESObjectREFR> };
-            auto* target = RE::TESForm::GetFormByID<RE::TESObjectREFR>(kTargetFormId);
-            const auto grab = hands.RequestGrabItem(false, target, 150.0f);
-            g_commandId = grab.commandId;
-            if (grab.result == RockProviderResultV1::RequestQueued) {
+            rock::api::grab::ForceGrabRequestV1 request{};
+            request.hand=rock::api::Hand::Right;
+            request.targetFormId=kTargetFormId;
+            request.maxDistanceGame=150.0f;
+            request.worldGeneration=snapshot.worldGeneration;
+            request.skeletonGeneration=snapshot.skeletonGeneration;
+            request.providerGeneration=snapshot.providerGeneration;
+            const auto admitted=g_grab->requestForceGrabV1(ownerToken,&request,&g_commandId);
+            if (admitted == rock::api::Status::RequestQueued) {
                 g_queuedFrame = snapshot.frameIndex;
             } else {
                 char message[96]{};
                 std::snprintf(message, sizeof(message),
-                    "Force-grab admission failed: result=%u", static_cast<std::uint32_t>(grab.result));
+                    "Force-grab admission failed: result=%u", static_cast<std::uint32_t>(admitted));
                 rock::sdk::example::logWarning(message);
             }
         }
@@ -91,20 +95,20 @@ namespace
             return;
         }
 
-        RockProviderInteractionCommandResultV1 command{};
-        if (RockProviderApi::inst->getInteractionCommandResultV1(
+        rock::api::grab::InteractionCommandResultV1 command{};
+        if (g_grab->getInteractionCommandResultV1(
                 ownerToken,
                 g_commandId,
-                &command) != RockProviderResultV1::Ok) {
+                &command) != rock::api::Status::Ok) {
             return;
         }
 
         const bool terminal =
-            command.state == RockProviderInteractionCommandStateV1::Succeeded ||
-            command.state == RockProviderInteractionCommandStateV1::Rejected ||
-            command.state == RockProviderInteractionCommandStateV1::Cancelled;
+            command.state == rock::api::grab::InteractionCommandStateV1::Succeeded ||
+            command.state == rock::api::grab::InteractionCommandStateV1::Rejected ||
+            command.state == rock::api::grab::InteractionCommandStateV1::Cancelled;
         if (!terminal && snapshot.frameIndex - g_queuedFrame > kCommandTimeoutFrames) {
-            (void)RockProviderApi::inst->cancelInteractionCommandV1(
+            (void)g_grab->cancelInteractionCommandV1(
                 ownerToken,
                 g_commandId);
             return;
@@ -136,11 +140,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKForceGrabCommand",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::InteractionCommands),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_COMMAND_CANCELLATION_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

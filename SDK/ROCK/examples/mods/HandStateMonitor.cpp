@@ -1,3 +1,4 @@
+#include <ROCK/Grab.h>
 #include "ExampleRuntime.h"
 
 #include <RE/Fallout.h>
@@ -7,37 +8,40 @@
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::grab::ApiV1* g_grab{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(1,g_grab)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     std::uint64_t g_lastStateSequence{ 0 };
     std::uint64_t g_lastEventSequence{ 0 };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     void reportHand(
         const std::uint64_t ownerToken,
-        const RockProviderHand hand) noexcept
+        const rock::api::Hand hand) noexcept
     {
-        RockProviderHandInteractionStateV1 state{};
-        if (RockProviderApi::inst->getHandInteractionStateV1(
+        rock::api::grab::HandInteractionStateV1 state{};
+        if (g_grab->getHandInteractionStateV1(
                 ownerToken,
                 hand,
-                &state) != RockProviderResultV1::Ok ||
-            !(state.flags & static_cast<std::uint32_t>(RockProviderHandInteractionFlagV1::Valid))) {
+                &state) != rock::api::Status::Ok ||
+            !(state.flags & static_cast<std::uint32_t>(rock::api::grab::HandInteractionFlagV1::Valid))) {
             return;
         }
 
-        RockHandItems<RE::TESObjectREFR> hands{
-            ownerToken, &RE::TESForm::GetFormByID<RE::TESObjectREFR> };
-        RockProviderResultV1 heldResult{};
-        auto* held = hands.GetHeldItem(hand == RockProviderHand::Left, &heldResult);
+        rock::api::grab::HandTargetDetailsV1 details{};
+        const auto heldResult=g_grab->getHandTargetDetailsV1(ownerToken,hand,&details);
+        // Resolve the copied reference identity only within this callback.
+        const auto heldForm=heldResult==rock::api::Status::Ok &&
+            state.phase==rock::api::grab::HandInteractionPhaseV1::Holding &&
+            (state.flags&static_cast<std::uint32_t>(rock::api::grab::HandInteractionFlagV1::LooseObject)) ? details.referenceFormId : 0;
+        auto* held=heldForm?RE::TESForm::GetFormByID<RE::TESObjectREFR>(heldForm):nullptr;
         // Generic occupancy includes native carry. HeldItem resolves loose
         // references only; it is not a generic occupied/free-hand predicate.
-        const auto has = [&state](RockProviderHandInteractionFlagV1 flag) {
+        const auto has = [&state](rock::api::grab::HandInteractionFlagV1 flag) {
             return (state.flags & static_cast<std::uint32_t>(flag)) != 0;
         };
         char message[288]{};
@@ -45,11 +49,11 @@ namespace
             message,
             sizeof(message),
             "%s hand phase=%u nativeCarry=%u rockGrip=%u attachOnly=%u targetKind=%u form=%08X body=%08X heldBodies=%u heldRef=%08X heldResult=%u",
-            hand == RockProviderHand::Right ? "Right" : "Left",
+            hand == rock::api::Hand::Right ? "Right" : "Left",
             static_cast<std::uint32_t>(state.phase),
-            has(RockProviderHandInteractionFlagV1::NativeWeaponCarry) ? 1u : 0u,
-            has(RockProviderHandInteractionFlagV1::RockGripActive) ? 1u : 0u,
-            has(RockProviderHandInteractionFlagV1::AttachOnly) ? 1u : 0u,
+            has(rock::api::grab::HandInteractionFlagV1::NativeWeaponCarry) ? 1u : 0u,
+            has(rock::api::grab::HandInteractionFlagV1::RockGripActive) ? 1u : 0u,
+            has(rock::api::grab::HandInteractionFlagV1::AttachOnly) ? 1u : 0u,
             static_cast<std::uint32_t>(state.targetKind),
             state.targetFormId,
             state.primaryBodyId,
@@ -61,15 +65,15 @@ namespace
 
     void pollEvents(const std::uint64_t ownerToken) noexcept
     {
-        std::array<RockProviderEventV1, 16> events{};
-        RockProviderEventStreamStateV1 stream{};
-        const auto result = RockProviderApi::inst->copyProviderEventsSinceV1(
+        std::array<rock::api::grab::EventV1, 16> events{};
+        rock::api::StreamV1 stream{};
+        const auto result = g_grab->copyEvents(
             ownerToken,
             g_lastEventSequence,
             events.data(),
             static_cast<std::uint32_t>(events.size()),
             &stream);
-        if (result != RockProviderResultV1::Ok) {
+        if (result != rock::api::Status::Ok) {
             return;
         }
 
@@ -84,11 +88,11 @@ namespace
                 static_cast<std::uint32_t>(event.kind),
                 static_cast<std::uint32_t>(event.hand),
                 event.formId,
-                event.result);
+                event.commandState);
             rock::sdk::example::logInfo(message);
         }
         if (stream.copiedCount != 0) {
-            g_lastEventSequence = stream.lastCopiedSequence;
+            g_lastEventSequence = stream.nextSequence;
         }
     }
 
@@ -107,11 +111,11 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
         if (snapshot.stateSequence != g_lastStateSequence) {
-            reportHand(ownerToken, RockProviderHand::Right);
-            reportHand(ownerToken, RockProviderHand::Left);
+            reportHand(ownerToken, rock::api::Hand::Right);
+            reportHand(ownerToken, rock::api::Hand::Left);
             g_lastStateSequence = snapshot.stateSequence;
         }
         pollEvents(ownerToken);
@@ -125,12 +129,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKHandStateMonitor",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::HandInteractionState) |
-                capability(provider::RockProviderConsumerCapabilityV1::ProviderEvents),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_PROVIDER_EVENTS_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

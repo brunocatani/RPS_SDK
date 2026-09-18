@@ -1,23 +1,25 @@
 #pragma once
 
-#include "ROCKProviderApi.h"
+#include <ROCK/Client.h>
 
 #include <cstdint>
 #include <string_view>
 
 namespace rock::sdk::example
 {
+    constexpr bool hasLifecycleFlag(std::uint32_t flags,api::core::LifecycleFlag flag) noexcept {
+        return (flags&static_cast<std::uint32_t>(flag))!=0;
+    }
     struct Definition
     {
         const char* pluginName{ nullptr };
         std::uint32_t pluginVersion{ 1 };
-        std::uint32_t requestedCapabilities{ 0 };
-        std::uint32_t minimumTableBytes{ 0 };
+        bool (*onConnect)(api::Client&,api::QueryInterfaceV1) noexcept{ nullptr };
         bool (*onStart)(std::uint64_t ownerToken) noexcept{ nullptr };
         void (*onStop)(std::uint64_t ownerToken) noexcept{ nullptr };
         void (*onFrame)(
             std::uint64_t ownerToken,
-            const provider::RockProviderFrameSnapshot& snapshot) noexcept{ nullptr };
+            const rock::api::core::SnapshotV1& snapshot) noexcept{ nullptr };
     };
 
     [[nodiscard]] const Definition& definition() noexcept;

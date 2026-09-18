@@ -2,6 +2,7 @@
 
 #include <F4SE/F4SE.h>
 #include <REL/Relocation.h>
+#include <Windows.h>
 
 #include <cstdio>
 #include <exception>
@@ -13,8 +14,10 @@
 
 namespace
 {
-    using namespace rock::provider;
+    using rock::sdk::example::hasLifecycleFlag;
 
+    rock::api::Client g_client;
+    const rock::api::core::ApiV1* g_core{};
     std::shared_ptr<spdlog::logger> g_logger;
     std::uint64_t g_ownerToken{ 0 };
     std::uint64_t g_callbackToken{ 0 };
@@ -44,20 +47,15 @@ namespace
         if (g_ownerToken != 0 && example.onStop) {
             example.onStop(g_ownerToken);
         }
-        if (RockProviderApi::inst && g_ownerToken != 0 && g_callbackToken != 0) {
-            (void)RockProviderApi::inst->unregisterFrameCallbackForOwnerV1(
-                g_ownerToken,
-                g_callbackToken);
+        const auto result=g_client.close();
+        if(result!=rock::api::Status::Ok && result!=rock::api::Status::OwnerNotRegistered) {
+            rock::sdk::example::logWarning("ROCK owner cleanup was rejected");return;
         }
-        g_callbackToken = 0;
-        if (RockProviderApi::inst && g_ownerToken != 0) {
-            (void)RockProviderApi::inst->unregisterConsumerV1(g_ownerToken);
-        }
-        g_ownerToken = 0;
+        g_callbackToken=0;g_ownerToken=0;g_core=nullptr;
     }
 
-    void ROCK_PROVIDER_CALL onRockFrame(
-        const RockProviderFrameSnapshot* snapshot,
+    void ROCK_CALL onRockFrame(
+        const rock::api::core::SnapshotV1* snapshot,
         void*)
     {
         if (!snapshot || g_ownerToken == 0) {
@@ -82,62 +80,33 @@ namespace
         }
 
         const auto& example = rock::sdk::example::definition();
-        const auto initializeResult = RockProviderApi::initialize(
-            ROCK_PROVIDER_API_VERSION,
-            example.minimumTableBytes);
-        if (initializeResult != 0 || !RockProviderApi::inst) {
-            char message[160]{};
-            std::snprintf(
-                message,
-                sizeof(message),
-                "ROCK API initialization failed with code %d",
-                initializeResult);
-            rock::sdk::example::logWarning(message);
-            return false;
+        const auto module=GetModuleHandleA("ROCK.dll");
+        const auto query=module?reinterpret_cast<rock::api::QueryInterfaceV1>(GetProcAddress(module,rock::api::kQueryExportName)):nullptr;
+        if(g_client.connect(query,example.pluginName)!=rock::api::Status::Ok)return false;
+        if(g_client.acquire(5,g_core)!=rock::api::Status::Ok ||
+           (example.onConnect && !example.onConnect(g_client,query))) {
+            (void)g_client.close();
+            rock::sdk::example::logWarning("A required ROCK interface major or permission is unavailable");return false;
         }
-
-        RockProviderConsumerRegistrationV1 registration{};
-        std::snprintf(
-            registration.modName,
-            sizeof(registration.modName),
-            "%s",
-            example.pluginName);
-        registration.requestedCapabilities = example.requestedCapabilities;
-
-        RockProviderConsumerHandleV1 handle{};
-        const auto registrationResult =
-            RockProviderApi::inst->registerConsumerV1(&registration, &handle);
-        if (registrationResult != RockProviderResultV1::Ok ||
-            handle.ownerToken == 0 ||
-            (handle.grantedCapabilities & example.requestedCapabilities) !=
-                example.requestedCapabilities) {
-            if (handle.ownerToken != 0) {
-                (void)RockProviderApi::inst->unregisterConsumerV1(handle.ownerToken);
-            }
-            rock::sdk::example::logWarning(
-                "ROCK denied one or more required capabilities");
-            return false;
-        }
-
-        g_ownerToken = handle.ownerToken;
+        g_ownerToken=g_client.owner();
         if (example.onStart && !example.onStart(g_ownerToken)) {
             disconnectRock();
             return false;
         }
 
         const auto callbackResult =
-            RockProviderApi::inst->registerFrameCallbackForOwnerV1(
+            g_core->registerFrameCallbackForOwnerV1(
                 g_ownerToken,
                 &onRockFrame,
                 nullptr,
                 &g_callbackToken);
-        if (callbackResult != RockProviderResultV1::Ok || g_callbackToken == 0) {
+        if (callbackResult != rock::api::Status::Ok || g_callbackToken == 0) {
             disconnectRock();
             rock::sdk::example::logWarning("ROCK owner frame callback registration failed");
             return false;
         }
 
-        rock::sdk::example::logInfo("Connected to ROCK provider API V1");
+        rock::sdk::example::logInfo("Connected to independently negotiated ROCK providers");
         return true;
     }
 

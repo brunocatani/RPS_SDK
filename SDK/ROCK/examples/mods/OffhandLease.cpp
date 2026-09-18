@@ -1,10 +1,16 @@
+#include <ROCK/Grab.h>
 #include "ExampleRuntime.h"
 
 #include <cstdio>
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::grab::ApiV1* g_grab{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(3,g_grab)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     // Replace this constant with a real activity predicate in your mod.
     bool kEnableReservation = false;
@@ -12,11 +18,6 @@ namespace
     bool g_leaseActive{ false };
     std::uint64_t g_lastExpiry{ ~std::uint64_t{ 0 } };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     bool start(const std::uint64_t) noexcept
     {
@@ -32,7 +33,7 @@ namespace
     void release(const std::uint64_t ownerToken) noexcept
     {
         if (g_leaseActive) {
-            (void)RockProviderApi::inst->releaseOffhandReservationV1(ownerToken);
+            (void)g_grab->releaseOffhandReservationV1(ownerToken);
             g_leaseActive = false;
         }
     }
@@ -44,34 +45,34 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
         if (!kEnableReservation ||
             !hasLifecycleFlag(
                 snapshot.lifecycleFlags,
-                RockProviderLifecycleFlag::PhysicsWriteAllowed)) {
+                rock::api::core::LifecycleFlag::PhysicsWriteAllowed)) {
             release(ownerToken);
             return;
         }
 
-        RockProviderOffhandReservationRequestV1 request{};
-        request.reservation = RockProviderOffhandReservation::ReloadReserved;
+        rock::api::grab::OffhandReservationRequestV1 request{};
+        request.reservation = rock::api::grab::OffhandReservation::ReloadReserved;
         request.leaseFrames = 2;
         request.worldGeneration = snapshot.worldGeneration;
         request.skeletonGeneration = snapshot.skeletonGeneration;
         request.providerGeneration = snapshot.providerGeneration;
         const auto result = g_leaseActive ?
-            RockProviderApi::inst->renewOffhandReservationV1(ownerToken, &request) :
-            RockProviderApi::inst->acquireOffhandReservationV1(ownerToken, &request);
-        g_leaseActive = result == RockProviderResultV1::Ok;
+            g_grab->renewOffhandReservationV1(ownerToken, &request) :
+            g_grab->acquireOffhandReservationV1(ownerToken, &request);
+        g_leaseActive = result == rock::api::Status::Ok;
         if (!g_leaseActive) {
             return;
         }
 
-        RockProviderOffhandReservationStateV1 state{};
-        if (RockProviderApi::inst->getOffhandReservationStateV1(
+        rock::api::grab::OffhandReservationStateV1 state{};
+        if (g_grab->getOffhandReservationStateV1(
                 ownerToken,
-                &state) == RockProviderResultV1::Ok &&
+                &state) == rock::api::Status::Ok &&
             state.expiresAfterFrame != g_lastExpiry) {
             g_lastExpiry = state.expiresAfterFrame;
             char message[160]{};
@@ -94,11 +95,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKOffhandLease",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::OffhandReservation),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_OFFHAND_RESERVATION_LEASES_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

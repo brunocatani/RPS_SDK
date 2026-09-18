@@ -1,3 +1,7 @@
+#include <ROCK/Collision.h>
+#include <ROCK/Weapon.h>
+#include <ROCK/WeaponParts.h>
+#include "WeaponIdentity.h"
 #include "ExampleRuntime.h"
 
 #include <array>
@@ -5,15 +9,19 @@
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::collision::ApiV1* g_collision{};
+    const rock::api::weapon::ApiV1* g_weapon{};
+    const rock::api::weaponparts::ApiV1* g_weaponparts{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(1,g_collision)==rock::api::Status::Ok &&
+            client.acquire(1,g_weapon)==rock::api::Status::Ok &&
+            client.acquire(1,g_weaponparts)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     std::uint64_t g_lastWeaponGeneration{ ~std::uint64_t{ 0 } };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     bool start(const std::uint64_t) noexcept
     {
@@ -28,57 +36,60 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
-        if (snapshot.weaponGenerationKey == g_lastWeaponGeneration) {
+        const auto equipped=rock::sdk::example::weaponIdentity(ownerToken,g_weapon,snapshot);
+        if (equipped.weaponGenerationKey == g_lastWeaponGeneration) {
             return;
         }
-        g_lastWeaponGeneration = snapshot.weaponGenerationKey;
+        g_lastWeaponGeneration = equipped.weaponGenerationKey;
 
-        if (snapshot.weaponGenerationKey == 0 || snapshot.weaponFormId == 0) {
+        if (equipped.weaponGenerationKey == 0 || equipped.weaponFormId == 0) {
             rock::sdk::example::logInfo("No equipped weapon is published");
             return;
         }
 
-        RockProviderWeaponCompositionStateV1 composition{};
-        std::array<RockProviderWeaponCompositionEntryV1, 64> entries{};
+        rock::api::weapon::WeaponCompositionStateV1 composition{};
+        std::array<rock::api::weapon::WeaponCompositionEntryV1, 64> entries{};
         std::uint32_t entryCount{ 0 };
         const auto compositionResult =
-            RockProviderApi::inst->getWeaponCompositionStateV1(
+            g_weapon->getWeaponCompositionStateV1(
                 ownerToken,
                 &composition);
-        if (compositionResult == RockProviderResultV1::Ok) {
-            (void)RockProviderApi::inst->copyWeaponCompositionEntriesV1(
+        if (compositionResult == rock::api::Status::Ok) {
+            (void)g_weapon->copyWeaponCompositionEntriesV1(
                 ownerToken,
                 entries.data(),
                 static_cast<std::uint32_t>(entries.size()),
                 &entryCount);
         }
 
-        std::array<RockProviderWeaponPartPoseV1, 128> partPoses{};
+        std::array<rock::api::weaponparts::WeaponPartPoseV1, 128> partPoses{};
         std::uint32_t partPoseCount{ 0 };
-        (void)RockProviderApi::inst->copyWeaponPartPoseSnapshotV1(
+        (void)g_weaponparts->copyWeaponPartPoseSnapshotV1(
             ownerToken,
             partPoses.data(),
             static_cast<std::uint32_t>(partPoses.size()),
             &partPoseCount);
 
-        RockProviderScopeSightStateV1 scope{};
-        const auto scopeResult = RockProviderApi::inst->getScopeSightStateV1(
+        rock::api::weapon::ScopeSightStateV1 scope{};
+        const auto scopeResult = g_weapon->getScopeSightStateV1(
             ownerToken,
             &scope);
 
+        rock::api::collision::EnvironmentV1 environment{};
+        (void)g_collision->getEnvironment(ownerToken,&environment);
         char message[256]{};
         std::snprintf(
             message,
             sizeof(message),
             "Weapon=%08X generation=%llu bodies=%u compositionEntries=%u partPoses=%u scope=%s",
-            snapshot.weaponFormId,
-            static_cast<unsigned long long>(snapshot.weaponGenerationKey),
-            snapshot.weaponBodyCount,
+            equipped.weaponFormId,
+            static_cast<unsigned long long>(equipped.weaponGenerationKey),
+            environment.weaponBodyCount,
             entryCount,
             partPoseCount,
-            scopeResult == RockProviderResultV1::Ok ? "published" : "unavailable");
+            scopeResult == rock::api::Status::Ok ? "published" : "unavailable");
         rock::sdk::example::logInfo(message);
     }
 }
@@ -90,14 +101,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKWeaponInspector",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::WeaponPartObservability) |
-                capability(provider::RockProviderConsumerCapabilityV1::WeaponComposition) |
-                capability(provider::RockProviderConsumerCapabilityV1::PoseReadback) |
-                capability(provider::RockProviderConsumerCapabilityV1::ScopeSightState),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_POSE_READBACK_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

@@ -9,13 +9,12 @@ bool testColliderFocus()
 {
     const auto& example = rock::sdk::example::ColliderFocusDefinition();
     if (!checkExample(!kEnableFocus, "ColliderFocus", "distributed default must be inert")) return false;
-    RockProviderApi api{};
-    api.clearColliderVisualizationOverrideV1 = &cleared;
-    RockProviderApi::inst = &api;
+    rock::api::diagnostics::ApiV1 diagnosticsApi{};
+    diagnosticsApi.clearColliderVisualizationOverrideV1 = &cleared;
+    g_diagnostics=&diagnosticsApi;
     bool ok = example.onStart(testOwner);
-    RockProviderFrameSnapshot frame{};
+    rock::api::core::SnapshotV1 frame{};
     frame.lifecycleFlags = ~std::uint32_t{0};
-    frame.weaponGenerationKey = 7;
     example.onFrame(testOwner, frame);
     example.onStop(testOwner);
     ok &= checkExample(clearCalls == 0, "ColliderFocus", "inert callbacks acquire no authority");
@@ -31,6 +30,6 @@ bool testColliderFocus()
     ok &= checkExample(clearCalls == 2 && clearArgumentsValid,
         "ColliderFocus", "lifecycle loss clears authority for the correct owner");
     kEnableFocus = false;
-    RockProviderApi::inst = nullptr;
+    g_diagnostics=nullptr;
     return ok;
 }

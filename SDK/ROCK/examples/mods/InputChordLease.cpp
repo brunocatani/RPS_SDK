@@ -1,10 +1,19 @@
+#include <ROCK/Hands.h>
+#include <ROCK/Input.h>
 #include "ExampleRuntime.h"
 
 #include <cstdio>
 
 namespace
 {
-    using namespace rock::provider;
+    const rock::api::hands::ApiV1* g_hands{};
+    const rock::api::input::ApiV1* g_input{};
+    bool connect(rock::api::Client& client,rock::api::QueryInterfaceV1) noexcept {
+        return client.acquire(1,g_hands)==rock::api::Status::Ok &&
+            client.acquire(3,g_input)==rock::api::Status::Ok;
+    }
+
+    using rock::sdk::example::hasLifecycleFlag;
 
     constexpr std::uint32_t kTriggerButtonId = 33;
     constexpr std::uint32_t kFaceButtonId = 7;
@@ -13,11 +22,6 @@ namespace
     bool g_leasePublished{ false };
     std::uint32_t g_lastEffectiveFlags{ ~std::uint32_t{ 0 } };
 
-    constexpr std::uint32_t capability(
-        const RockProviderConsumerCapabilityV1 value) noexcept
-    {
-        return static_cast<std::uint32_t>(value);
-    }
 
     bool start(const std::uint64_t) noexcept
     {
@@ -28,15 +32,15 @@ namespace
 
     void clear(const std::uint64_t ownerToken) noexcept
     {
-        if (!RockProviderApi::inst) {
+        if (!g_input) {
             return;
         }
-        (void)RockProviderApi::inst->clearHandInputSuppressionV1(
+        (void)g_input->clearHandInputSuppressionV1(
             ownerToken,
-            RockProviderHand::Right);
-        (void)RockProviderApi::inst->clearHandInputSuppressionV1(
+            rock::api::Hand::Right);
+        (void)g_input->clearHandInputSuppressionV1(
             ownerToken,
-            RockProviderHand::Left);
+            rock::api::Hand::Left);
         g_leasePublished = false;
     }
 
@@ -47,46 +51,49 @@ namespace
 
     void frame(
         const std::uint64_t ownerToken,
-        const RockProviderFrameSnapshot& snapshot) noexcept
+        const rock::api::core::SnapshotV1& snapshot) noexcept
     {
-        const auto hand = RockProviderApi::inst->getOffhandHandV1();
-        RockProviderRawWandButtonStateV1 trigger{};
-        RockProviderRawWandButtonStateV1 face{};
-        const bool sampled = hand != RockProviderHand::None &&
-            RockProviderApi::inst->getRawWandButtonStateV1(
+        rock::api::hands::RolesV1 roles{};
+        const auto hand=g_hands->getRoles(ownerToken,&roles)==rock::api::Status::Ok &&
+            roles.sample.frameIndex==snapshot.frameIndex && roles.sample.worldGeneration==snapshot.worldGeneration &&
+            roles.sample.skeletonGeneration==snapshot.skeletonGeneration && roles.sample.providerGeneration==snapshot.providerGeneration ? roles.offhand : rock::api::Hand::None;
+        rock::api::input::RawWandButtonStateV1 trigger{};
+        rock::api::input::RawWandButtonStateV1 face{};
+        const bool sampled = hand != rock::api::Hand::None &&
+            (g_input->getRawWandButtonStateV1(ownerToken,
                 hand,
                 kTriggerButtonId,
-                &trigger) &&
-            RockProviderApi::inst->getRawWandButtonStateV1(
+                &trigger) == rock::api::Status::Ok) &&
+            (g_input->getRawWandButtonStateV1(ownerToken,
                 hand,
                 kFaceButtonId,
-                &face) &&
+                &face) == rock::api::Status::Ok) &&
             trigger.available != 0 && face.available != 0;
         const bool chordHeld = sampled && trigger.held != 0 && face.held != 0;
 
         if (chordHeld) {
-            RockProviderHandInputSuppressionRequestV1 request{};
+            rock::api::input::HandInputSuppressionRequestV1 request{};
             request.hand = hand;
             request.flags = static_cast<std::uint32_t>(
-                RockProviderHandInputSuppressionFlagV1::SuppressConfigModeChord);
+                rock::api::input::HandInputSuppressionFlagV1::SuppressConfigModeChord);
             request.leaseFrames = kLeaseFrames;
             request.worldGeneration = snapshot.worldGeneration;
             request.skeletonGeneration = snapshot.skeletonGeneration;
             request.providerGeneration = snapshot.providerGeneration;
             g_leasePublished =
-                RockProviderApi::inst->setHandInputSuppressionV1(
+                g_input->setHandInputSuppressionV1(
                     ownerToken,
-                    &request) == RockProviderResultV1::Ok;
+                    &request) == rock::api::Status::Ok;
         } else if (g_leasePublished) {
             clear(ownerToken);
         }
 
-        RockProviderHandInputSuppressionStateV1 state{};
-        if (hand != RockProviderHand::None &&
-            RockProviderApi::inst->getHandInputSuppressionStateV1(
+        rock::api::input::HandInputSuppressionStateV1 state{};
+        if (hand != rock::api::Hand::None &&
+            g_input->getHandInputSuppressionStateV1(
                 ownerToken,
                 hand,
-                &state) == RockProviderResultV1::Ok &&
+                &state) == rock::api::Status::Ok &&
             state.effectiveFlags != g_lastEffectiveFlags) {
             g_lastEffectiveFlags = state.effectiveFlags;
             char message[192]{};
@@ -110,12 +117,7 @@ namespace rock::sdk::example
         static const Definition value{
             .pluginName = "ROCKSDKInputChordLease",
             .pluginVersion = 1,
-            .requestedCapabilities =
-                capability(provider::RockProviderConsumerCapabilityV1::FrameSnapshots) |
-                capability(provider::RockProviderConsumerCapabilityV1::HandInputSuppression) |
-                capability(provider::RockProviderConsumerCapabilityV1::InputObservability),
-            .minimumTableBytes =
-                provider::ROCK_PROVIDER_API_V1_INPUT_OBSERVABILITY_TABLE_BYTES,
+            .onConnect = &connect,
             .onStart = &start,
             .onStop = &stop,
             .onFrame = &frame,

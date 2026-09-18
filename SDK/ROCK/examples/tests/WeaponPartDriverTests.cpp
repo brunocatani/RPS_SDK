@@ -9,14 +9,13 @@ bool testWeaponPartDriver()
 {
     const auto& example = rock::sdk::example::WeaponPartDriverDefinition();
     if (!checkExample(!kEnableDemoMotion, "WeaponPartDriver", "distributed default must be inert")) return false;
-    RockProviderApi api{};
-    api.clearWeaponPartTargetsV1 = &cleared;
-    api.clearWeaponPartDriveTargetsV1 = &cleared;
-    RockProviderApi::inst = &api;
+    rock::api::weaponparts::ApiV1 weaponpartsApi{};
+    weaponpartsApi.clearWeaponPartTargetsV1 = &cleared;
+    weaponpartsApi.clearWeaponPartDriveTargetsV1 = &cleared;
+    g_weaponparts=&weaponpartsApi;
     bool ok = example.onStart(testOwner);
-    RockProviderFrameSnapshot frame{};
+    rock::api::core::SnapshotV1 frame{};
     frame.lifecycleFlags = ~std::uint32_t{0};
-    frame.weaponGenerationKey = 7;
     example.onFrame(testOwner, frame);
     example.onStop(testOwner);
     ok &= checkExample(clearCalls == 0, "WeaponPartDriver", "inert callbacks acquire no authority");
@@ -32,6 +31,6 @@ bool testWeaponPartDriver()
     ok &= checkExample(clearCalls == 4 && clearArgumentsValid,
         "WeaponPartDriver", "lifecycle loss clears authority for the correct owner");
     kEnableDemoMotion = false;
-    RockProviderApi::inst = nullptr;
+    g_weaponparts=nullptr;
     return ok;
 }
