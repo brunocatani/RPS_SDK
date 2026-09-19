@@ -63,8 +63,9 @@ namespace rock::api::hands {
 
     struct HeadPoseV1 { std::uint32_t size{sizeof(HeadPoseV1)}; std::uint32_t valid{}; SampleV1 sample{}; Transform transform{}; float forwardWorld[3]{}; };
 
-    // Roles describe ROCK's published physical primary/offhand assignment.
-    // They are independent of temporary firing-grip ownership.
+    // Roles identify the physical hands assigned to ROCK's firing/support roles
+    // in this publication. They follow firing-hand transfers; they are not the
+    // player's configured dominant hand. Left/Right identities never change.
     struct RolesV1 {
         std::uint32_t size{sizeof(RolesV1)};
         std::uint32_t version{1};
