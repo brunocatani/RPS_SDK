@@ -22,7 +22,7 @@ namespace
 
     void event(const std::uint64_t ownerToken, const PaperEventV1& data) noexcept
     {
-        if (data.kind != PaperEventKindV1::FrameComplete) {
+        if (data.kind != PaperEventKindV1::PresentationComplete) {
             return;
         }
         PaperNativePoseFrameStateV1 frame{};
