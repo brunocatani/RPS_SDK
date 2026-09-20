@@ -53,6 +53,10 @@ namespace rock::api::core {
         AfterRock = 2,
         Complete = 3,
         NativeGraphOutput = 4,
+        // Final readback after FRIK's world final, once per skeleton frame.
+        // Observation only: publish control/animation writes in the earlier
+        // phases. Complete retains its existing control-completion meaning.
+        Presented = 5,
     };
 
     enum class AnimationPhaseContextFlagV1 : std::uint32_t

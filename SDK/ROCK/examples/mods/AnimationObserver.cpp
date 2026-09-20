@@ -30,20 +30,23 @@ namespace
         const rock::api::core::AnimationPhaseContextV1* context,
         void*)
     {
-        if (!context || context->phase != rock::api::core::AnimationPhaseV1::Complete ||
+        if (!context || context->phase != rock::api::core::AnimationPhaseV1::Presented ||
             context->frameIndex % 300 != 0) {
             return;
         }
         rock::api::animation::NativeAnimationAuthorityStateV1 authority{};
         if(g_animation->getNativeAnimationAuthorityStateV1(g_owner,&authority)!=rock::api::Status::Ok)return;
+        rock::api::hands::PresentedHandPoseV1 presented{};
+        const bool currentPose = g_hands->getPresentedHandPoseV1(g_owner, rock::api::Hand::Right, &presented) == rock::api::Status::Ok &&
+            presented.frameIndex == context->frameIndex && presented.presentationSequence == context->frameIndex;
         char message[192]{};
         std::snprintf(
             message,
             sizeof(message),
-            "Animation complete frame=%llu authority=%08X phaseFlags=%08X",
+            "Animation presented frame=%llu authority=%08X phaseFlags=%08X currentPose=%u",
             static_cast<unsigned long long>(context->frameIndex),
             authority.activeFlags,
-            context->flags);
+            context->flags, currentPose ? 1u : 0u);
         rock::sdk::example::logInfo(message);
     }
 

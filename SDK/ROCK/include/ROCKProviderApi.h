@@ -501,6 +501,8 @@ namespace rock::provider
         AfterRock = 2,
         Complete = 3,
         NativeGraphOutput = 4,
+        // Final readback after world final. Control writes belong to earlier phases.
+        Presented = 5,
     };
 
     enum class RockProviderAnimationPhaseContextFlagV1 : std::uint32_t

@@ -57,10 +57,12 @@ namespace
             return;
         }
 
-        rock::api::hands::HandFrameV1 presented{};
-        if (!(g_hands->getPresentedHandFrameV1(ownerToken,
+        // A control target starts from independent current tracking. Reading
+        // our preceding presented output here would accumulate the offset.
+        rock::api::hands::HandFrameV1 tracked{};
+        if (!(g_hands->getHandFrameV1(ownerToken,
                 rock::api::Hand::Right,
-                &presented) == rock::api::Status::Ok)) {
+                &tracked) == rock::api::Status::Ok) || tracked.frameIndex != snapshot.frameIndex) {
             clear(ownerToken);
             return;
         }
@@ -70,7 +72,7 @@ namespace
         request.flags = static_cast<std::uint32_t>(
             rock::api::animation::HandVisualAuthorityFlagV1::WorldTransform);
         request.priority = 50;
-        request.worldTransform = presented.transform;
+        request.worldTransform = tracked.transform;
         request.worldTransform.translate[2] += 2.0f;
         request.leaseFrames = 2;
         request.worldGeneration = snapshot.worldGeneration;

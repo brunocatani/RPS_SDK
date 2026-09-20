@@ -83,6 +83,9 @@ namespace rock::api::hands {
         static constexpr std::uint32_t majorVersion=kMajor;
         static constexpr std::uint32_t minorVersion=kMinor;
         Status(ROCK_CALL* getHandFrameV1)(OwnerToken ownerToken, Hand hand, HandFrameV1* outFrame) noexcept;
+        // Last completed presentation, with its capture frame/generations.
+        // Early phases may return the preceding frame; before the first final
+        // capture, readback is unavailable. Presented supplies same-frame data.
         Status(ROCK_CALL* getPresentedHandFrameV1)(OwnerToken ownerToken, Hand hand, HandFrameV1* outFrame) noexcept;
         Status(ROCK_CALL* getPresentedHandPoseV1)(std::uint64_t ownerToken, Hand hand, PresentedHandPoseV1* outPose) noexcept;
         // Family-local publication identity; compare before combining readbacks.
