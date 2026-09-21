@@ -356,6 +356,8 @@ namespace rock::api::grab {
         Status(ROCK_CALL* getInteractionCommandResultV1)(std::uint64_t ownerToken, std::uint64_t commandId, InteractionCommandResultV1* outResult) noexcept;
         Status(ROCK_CALL* requestForceReleaseV1)(std::uint64_t ownerToken, const ForceReleaseRequestV1* request, std::uint64_t* outCommandId) noexcept;
         Status(ROCK_CALL* requestThrownDropV1)(std::uint64_t ownerToken, const ThrownDropRequestV1* request, std::uint64_t* outCommandId) noexcept;
+        // Any-thread synchronized value snapshot, including F4SE tasks. Check
+        // Status and Valid; the result grants no live pointer or write authority.
         Status(ROCK_CALL* getHandInteractionStateV1)(std::uint64_t ownerToken, Hand hand, HandInteractionStateV1* outState) noexcept;
         Status(ROCK_CALL* cancelInteractionCommandV1)(std::uint64_t ownerToken, std::uint64_t commandId) noexcept;
         Status(ROCK_CALL* acquireOffhandReservationV1)(std::uint64_t ownerToken, const OffhandReservationRequestV1* request) noexcept;
