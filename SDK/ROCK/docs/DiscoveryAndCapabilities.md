@@ -1,117 +1,43 @@
-# Discovery, capabilities, features, and limits
+# Discovery and interface permissions
 
-There are three independent compatibility layers:
+The current API negotiates 13 families independently. Include `ROCK/Discovery.h`, `ROCK/Client.h` and only the feature headers your mod consumes. See the [interface/version map](ApiIndex.md).
 
-1. API version: currently `ROCK_PROVIDER_API_VERSION == 1`.
-2. Function-table byte extent: proves an appended slot exists.
-3. Feature/capability negotiation: proves the loaded provider implements the behavior and grants this owner permission to use it.
+## Discovery
 
-Passing only one layer is insufficient for optional appended surfaces.
-
-## Safe descriptor
-
-`RockProviderApi::initialize` prefers `ROCKAPI_GetDescriptorV1`. The immutable descriptor reports its own size, API version, provider mod version, exact table byte size, both feature words, and the table pointer. The legacy export is used only when the caller did not request a minimum table extent.
-
-After initialization, the header exposes `negotiatedApiVersion`, `negotiatedTableByteSize`, `negotiatedFeatureBits`, and `negotiatedFeatureBits2` for diagnostics. Prefer the named `supports...V1` helpers for decisions.
-
-## Consumer capabilities
-
-Capabilities are owner permissions requested at registration and returned in `grantedCapabilities`.
-
-| Capability | Enables |
-| --- | --- |
-| `FrameSnapshots` | Owner frame callbacks and coherent frame/lifecycle snapshots. |
-| `ExternalBodies` | Register consumer-owned physics bodies. |
-| `ExternalContacts` | Read contacts against registered external bodies. |
-| `OffhandReservation` | Reserve offhand interaction with rolling leases. |
-| `InteractionCommands` | Queue grab, release, thrown-drop, and cancellation commands. |
-| `HandInputSuppression` | Publish per-hand input suppression leases. |
-| `WeaponPartInteraction` | Publish semantic part targets and drive targets. |
-| `NativeAnimationAuthority` | Acquire bounded native animation authority. |
-| `AnimationPhases` | Subscribe to animation phase callbacks. |
-| `EquippedWeaponGripState` | Read resolved weapon/grip/muzzle state. |
-| `HandVisualAuthority` | Publish presented hand/finger transforms. |
-| `NativeAnimationRuntimeProvider` | Publish or clear native animation runtime state. |
-| `EquippedWeaponHandlingAuthority` | Own equipped-weapon handling policy. |
-| `DebugOverlayPublication` | Publish bounded stereo overlay lines/text. |
-| `ProviderEvents` | Consume the owner-filtered provider event cursor. |
-| `HandInteractionState` | Read coherent per-hand interaction state. |
-| `ExternalBodyScopes` | Replace/clear external bodies independently by scope. |
-| `WeaponPartObservability` | Resolve targets and copy part poses/drive results. |
-| `WeaponComposition` | Read installed composition and semantic coverage. |
-| `PoseReadback` | Read authored grip and presented hand poses. |
-| `SemanticHandContacts` | Read semantic finger/hand contacts. |
-| `PlayerColliderDescriptors` | Discover generated player colliders by value. |
-| `ScopeSightState` | Read current sight/scope activation and anchor state. |
-| `InputObservability` | Read raw controller state and effective suppression state. |
-| `TouchGrabTargets` | Publish fixed/hinge/prismatic touch-grab targets and read their states. |
-| `WorldRaycasts` | Issue bounded provider-filtered world raycasts in owner callbacks. |
-| `ColliderVisualizationOverride` | Focus debug visualization on one current weapon body. |
-| `PlayerController` | Read the native player-controller value snapshot and request guarded native jumps. |
-| `TargetDetails` | Observe either hand's resolved target and query native reference interaction fields. |
-| `PowerArmor` | Classify Power Armor references and copy their linked frame and animated armor-hand poses; grabs also require `InteractionCommands`. |
-
-Request only what the mod actually uses. Registration can succeed with a subset; the granted mask is authoritative.
-
-## Feature word 1
-
-The first feature word currently defines:
-
-`FrameCallbacks`, `LifecycleFields`, `HandFrames`, `WeaponEvidence`, `BodyContacts`, `ExternalContacts`, `InventoryForceGrab`, `ConsumerRegistrationV1`, `OwnerFilteredExternalContactsV1`, `InteractionCommandQueue`, `ForceGrabCommand`, `ForceReleaseCommand`, `ThrownDropCommand`, `HandInputSuppression`, `WeaponPartInteraction`, `WeaponPartGripState`, `WeaponPartRecordIdentity`, `WeaponPartTargetNonExclusive`, `RawWandButtonState`, `PipboyInputSuppression`, `WeaponEmitters`, `NativeAnimationAuthority`, `AnimationPhases`, `EquippedWeaponGripState`, `HandVisualAuthority`, `NativeAnimationRuntimeProvider`, `EquippedWeaponHandlingAuthority`, `DebugOverlayPublication`, `PresentedHandFrames`, `EquippedWeaponHandRequest`, and `ColliderVisualizationOverride`.
-
-`EquippedWeaponHandRequest` stays defined for ABI compatibility but is never advertised: the programmatic exact-hand feature was removed, and its entry point declines every request.
-
-## Feature word 2
-
-The second feature word currently defines:
-
-`SafeDescriptor`, `ExtendedLimits`, `PublicStructureSizes`, `OwnerFrameCallbacks`, `HandInteractionState`, `ProviderEvents`, `EquippedWeaponState`, `ExternalBodyScopes`, `ExternalContactCursor`, `WeaponPartResolution`, `WeaponPartPoses`, `WeaponPartDriveResults`, `ScopeSightState`, `WeaponComposition`, `AuthoredGripSnapshot`, `PresentedHandPose`, `SemanticHandContacts`, `PlayerColliderDescriptors`, `HandCollisionAvailability`, `CommandCancellation`, `InputSuppressionState`, `OffhandReservationLeases`, `SnapshotEnrichment`, `NativeAnimationRuntimeLeases`, `StatefulPublicationLeases`, `CommandLifecycle`, `InputSampleMetadata`, `WeaponClassificationEnrichment`, `ExternalContactEnrichment`, `TouchGrabTargets`, `NativeVatsVansInputSuppression`, and `WorldRaycasts`.
-
-## Table guards
-
-Most appended families have a named `ROCK_PROVIDER_API_V1_*_TABLE_BYTES` constant and usually a `supports...V1` helper. Initialization with the family constant is the simplest hard requirement. A plugin supporting older providers can initialize without a minimum, fetch limits, and conditionally enable each family through the helper.
-
-The logical-input and player-controller additions use table-extent helpers rather than new feature bits. `getLogicalInputActionStateV1` additionally requires the registered `InputObservability` capability. Controller state and jump calls require `PlayerController`; the granted capability mask remains the per-owner behavioral authority.
-
-## Limits
-
-Call `getProviderLimitsV1` for the stable prefix and `getProviderLimitsExtV1` for the complete current set. The extended structure covers consumers, callbacks, bodies/scopes/contacts, commands/results, input leases, weapon targets/drives/poses, animation authorities, overlay budgets, event retention, composition, semantic contacts, player colliders, touch targets/scopes, evidence catalogs, and per-owner raycast budgets.
-
-Call `getPublicStructureSizeV1` when interoperating across header revisions and prefix-copy only the provider-supported bytes of extensible value structures.
-
-## Recent UI and inventory gates
-
-`InventoryForceGrab` is a feature-word-1 bit; it gates the added inventory mode
-of the existing force-grab slot. `getRawWandThumbstickV1` and
-`getNativeInputContextV1` require table extents of 752 and 760 bytes respectively;
-compute their member boundaries before reading the pointers. Configuration V1
-is separately discovered through `GetROCKConfigurationApi`, with its own size
-and version validation.
-
-## Power Armor and target-detail gates
-
-Slots 95–98 add `getHandTargetDetailsV1`, `queryReferenceInteractionV1`,
-`queryPowerArmorTargetV1`, and `requestPowerArmorGrabV1`. Require
-`ROCK_PROVIDER_API_V1_POWER_ARMOR_TABLE_BYTES` (792 x64 bytes) for the complete
-family. A consumer using only generic queries can calculate the member boundary
-before reading that pointer:
+Resolve `ROCKAPI_QueryInterfaceV1` from the already-loaded `ROCK.dll`, with the function-pointer type in `ROCK/Discovery.h`:
 
 ```cpp
-constexpr auto referenceDetailsBytes = static_cast<std::uint32_t>(
-    offsetof(RockProviderApi, queryReferenceInteractionV1) +
-    sizeof(std::declval<RockProviderApi>().queryReferenceInteractionV1));
+Status ROCK_CALL query(
+    InterfaceId interfaceId,
+    std::uint32_t exactMajor,
+    std::uint32_t minimumMinor,
+    std::uint32_t minimumTableBytes,
+    const InterfaceDescriptorV1** outDescriptor) noexcept;
 ```
 
-This boundary is 776 x64 bytes. These additions have capability grants and table
-guards; there is no separate Power Armor feature bit or `supportsPowerArmorV1` helper.
+The success result is `Status::Ok`. Check it before reading the descriptor. Check descriptor size, identity, exact major, compatible minor, table byte size, Core dependency and table pointer before casting. The SDK client performs these checks. Tables and descriptors are immutable for the lifetime of the loaded DLL. Discovery requires no world, skeleton, owner registration or physics instance; it does not establish gameplay readiness.
 
-`TargetDetails` permits the generic hand-target and reference-interaction queries.
-`PowerArmor` permits classification, linked-frame and bone-pose queries;
-specific-point requests also require `InteractionCommands`. Request
-`FrameSnapshots` to run the integration in an owner frame callback. Inspect the
-granted mask before using any of these families.
+Unknown interface, unsupported major, insufficient minor and insufficient table extent have distinct status values. All unsuccessful queries with a valid output address store a null descriptor. Major zero and table extent zero are invalid requests. A V1 request is never satisfied with V2. The negotiation implementation supports multiple descriptors for different majors of the same family; production currently exposes only the implemented V1s.
 
-Queries require the animation-owner thread; owner frame callbacks provide this
-boundary. PA commands retain normal result/cancellation semantics, accept native
-grip release, and release their owned attachment after their consumer unregisters.
-See [the integration contract](FeatureGuide.md#power-armor-and-reference-details).
+The old `ROCKAPI_GetApi`, `ROCKAPI_GetProviderApi`, `ROCKAPI_GetDescriptorV1` and `GetROCKConfigurationApi` exports have been removed from the current ROCK runtime. There is no forwarding table or fallback export that disguises the new layout as the old one.
+
+## Registration and permissions
+
+Register a nonempty, null-terminated mod name of at most 63 bytes through Core. Names identify registrations and duplicate active names return `OwnerConflict`. An owner token is issued by ROCK; never invent, serialize, reuse after unregister, or share it with another mod. Registration provides Core Read permission only.
+
+Bind each required `(owner, interface, exact major)` through `Core.bindInterface`. Permissions are local to that interface major: Read is bit 0 and Write is bit 1. Core has Read and Callbacks (bit 2), but no Write permission. Hands and References are Read-only. Unsupported bits and an empty permission request are rejected. Binding is idempotent; adding permissions preserves resources and event cursors. Dropping permissions or changing an already-bound major requires closing the owner and creating a new registration. A rejected binding leaves the previous binding intact.
+
+Write does not imply Read. Discovery grants no permission. Acquiring Collision Write cannot authorize Grab commands, Input suppression, or Animation publications. Cached readbacks, events and caller-visible state remain readable after an owner fault, while new writes, callbacks and bindings are refused. The consumer should stop its active behavior, unregister and reinitialize deliberately.
+
+One unregister operation retires every resource belonging to the owner: frame and phase callbacks, synchronous grab listeners, queued commands, pending reservations, offhand reservation, external body scopes, touch targets, native-animation publications, hand visuals, weapon targets/drives, handling authority and diagnostics. Completed provider-owned PA attachments are also released. A manually attached peer hand is preserved. An ordinary successful loose-object grab may have become player-owned; unregister does not confiscate it.
+
+
+## SDK helper
+
+`Client::connect(query, name)` negotiates Core and registers the owner. `client.acquire(permissionMask, table)` negotiates the typed table at its declared major, minimum minor and full `sizeof(Table)`, then binds the family. Check every result. Request Read and Write together when a feature both publishes and observes; Write alone does not grant readback.
+
+An acquisition failure leaves the output pointer null. Stop partially initialized behavior and close the owner on its allowed thread. `Client::close()` is explicit, preserves the owner on a failed teardown, and treats an already-removed owner as closed. Do not destroy callback userdata or unload code while registration remains live.
+
+## Version domains
+
+All current interfaces are major 1. Hands 1.1 adds `getRoles`; WeaponParts 1.1 adds `querySourcePath`. Their full current table sizes are checked by the client. FRIK API 2.3, the ROCK DLL version, and SDK package version are independent numbers. Core `Presented` and PAPER `PresentationComplete` are current event/phase contracts; use current matching headers and runtimes rather than inferring them from an unrelated version string.

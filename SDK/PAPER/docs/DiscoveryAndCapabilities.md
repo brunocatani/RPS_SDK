@@ -54,7 +54,6 @@ capability. Base-table discovery alone does not prove appended slots exist.
 
 ## Owner lifetime
 
-An owner token is valid only for its `paperProviderGeneration`. Runtime reset,
-provider restart, unload, or explicit unregistration invalidates its callbacks,
-leases, authority and snapshot cursors. Register again instead of carrying old
-tokens across a provider generation.
+An owner token belongs to its registration and provider generation. Explicit unregistration and full provider shutdown/reinitialization retire it. Normal `RuntimeReset` preserves registrations/callbacks while clearing authority, capture leases and observation state. Discard old generation-dependent data and rearm deliberately; do not create duplicate registrations on ordinary resets.
+
+`PresentationComplete` observation requires `FrameCallbacks` plus `NativePosePipeline`. It follows final native-pose publication and does not advance the control lease clock.

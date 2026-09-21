@@ -10,7 +10,7 @@ target_link_libraries(MyPanelPlugin PRIVATE RPS::UI)
 Use Windows x64 and include `RPSUIFrameworkApi.h`. This module alone requires
 C++17. A complete F4SE plugin may require a newer language level through its own
 dependencies. Linking the target neither links a host DLL import library nor
-installs the UI runtime, ROCK, or Dear ImGui.
+installs the UI runtime or Dear ImGui. ROCK is not a requirement for the UI host.
 
 `rpsui::sdk::RequestApiV1()` finds an already loaded
 `RPS_UI_Framework.dll`, resolves `RPSUI_RequestApi`, requests version 1, and
@@ -31,11 +31,7 @@ valid pixel dimensions, physical width limits, and a non-null `noexcept`
 callback. The host copies registration metadata but borrows callback code and
 `userData`. A registered panel starts closed.
 
-The compiled [PanelConsumer.cpp](../examples/PanelConsumer.cpp) fragment provides
-`start`, `present`, `state`, and `stop`. It has no F4SE entry point and performs
-no automatic game action. Supply a render callback with process-lifetime code
-and stable data, then explicitly present the panel after your mod's own opening
-gesture. The fragment assumes serialized calls on the consumer's control thread.
+The compiled `SDK/UI/examples/PanelConsumer.cpp` fragment provides `start`, `present`, `state`, `neighbors`, and `stop`. It discovers both the base and Cooperation tables and registers a cooperative panel. Supply stable callback code/data, serialize control calls, and explicitly open after your own gesture. Keep the data alive until `stop()` returns `Ok`; retry `CallbackBusy` on a later control tick. The fragment has no F4SE entry point and performs no automatic game action.
 
 `PanelPoseV1` describes a world-space panel in game units: center, unit right/up/
 front basis, and physical width/height. The defaults describe a valid basis,
@@ -64,4 +60,4 @@ when your gameplay lifecycle becomes unavailable.
 For permanent logical teardown, unregister the panel or unregister the consumer
 to remove all its panels. Unregistration is not a wait for in-flight callbacks.
 Keep callback code and `userData` alive until rendering is externally quiescent;
-V1 provides no safe hot-unload handshake. See [the lifetime contract](RuntimeContract.md).
+For a nonblocking callback-drain handshake, negotiate the separate [Cooperation API](CooperationApi.md) and use safe unregister; retain context while it returns `CallbackBusy`. This retires UI callback state, not every plugin subsystem. See [the lifetime contract](RuntimeContract.md).

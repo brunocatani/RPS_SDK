@@ -1,10 +1,10 @@
 # Current PAPER behavior and compatibility
 
-Checked against PAPER source `05a952f` on 2026-09-11. PAPER's public V1 table
+API integration and presentation timing checked against current source on 21 September 2026. PAPER's public V1 table
 remains 50 function pointers / 400 x64 bytes. Recent reload fixes change runtime
 coordination, not the public table version. The supported consumer header is
 `PAPERApi.h`, the runtime is `PAPER.dll`, and the normal configuration is
-`Documents/My Games/Fallout4VR/PAPER_Config/PAPER.ini`.
+`Documents/My Games/Fallout4VR/Mods_Config/PAPER/PAPER.ini`.
 
 ## Reload and presented-hand baselines
 
@@ -49,9 +49,11 @@ parts release with the physical grab button.
 
 The existing development-capture ceiling, API-activation gate, renewable lease,
 cache access policy and budgets still apply. Passive telemetry must not enable
-harvesting, motion-cache writes or background acquisition. The live configuration
-watcher is opt-in; ordinary edits apply at the documented lifecycle/restart path
-when it is disabled. See [DevelopmentCaptureAndStorage.md](DevelopmentCaptureAndStorage.md).
+harvesting, motion-cache writes or background acquisition. Configuration hot reload is automatic, independently of development capture; changed cache size limits apply next session. See [DevelopmentCaptureAndStorage.md](DevelopmentCaptureAndStorage.md).
 
 These are source-verified contracts. The SDK build does not certify in-game
 alignment, capture completeness or reload quality for a particular weapon.
+
+## Final-pose readback
+
+PAPER consumes ROCK's modular Core, Hands, Grab, Weapon, WeaponParts, Animation and Diagnostics tables. `FrameComplete` retains control/lease semantics. `PresentationComplete` follows ROCK `Presented` and supplies final native-pose observation to owners granted `NativePosePipeline` plus `FrameCallbacks`.

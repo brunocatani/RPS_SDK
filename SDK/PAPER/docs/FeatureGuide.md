@@ -62,3 +62,7 @@ compiled cache.
 
 Manipulation telemetry projects current observed part motion onto these paths
 and reports normalized progress per hand. It does not drive the part.
+
+## Final native-pose observations
+
+Request `NativePosePipeline` and `FrameCallbacks`; handle `PaperEventKindV1::PresentationComplete` before querying final native-pose frame and hand solutions. `FrameComplete` is the earlier control/lease boundary. The presentation event does not advance leases. Inspect validity, frame and generation identity before using residuals or finger transforms.

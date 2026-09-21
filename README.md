@@ -7,8 +7,8 @@ without coupling the SDK release history to a runtime plugin repository.
 
 Available modules are `SDK/ROCK`, `SDK/PAPER`, and `SDK/UI`. Together they contain:
 
-- the complete provider V1 public headers;
-- complete slot, type, capability, and lifecycle documentation;
+- the current independently versioned ROCK feature headers plus PAPER and UI contracts;
+- complete callable, type, permission/capability and lifecycle documentation;
 - focused integration recipes;
 - provider-local FO4VR/F4SE example runtimes;
 - 29 buildable generic example plugins and an inert compiled UI integration fragment;
@@ -41,7 +41,7 @@ RPS_SDK/
 ```
 
 Consumers may add this repository with `add_subdirectory()` and link the
-header-only `RPS::ROCK`, `RPS::PAPER`, `RPS::UI`, or aggregate `RPS::SDK` interface target.
+explicit header-only `RPS::ROCK<Family>` targets, `RPS::PAPER`, or `RPS::UI`. The aggregate `RPS::SDK` remains available for include paths; use explicit ROCK family targets for new consumers.
 Installed packages expose the same targets through
 `find_package(RPS_SDK CONFIG REQUIRED)`.
 
@@ -54,7 +54,7 @@ discovers the sibling CommonLibF4VR checkout automatically; elsewhere, pass
 
 ```powershell
 cmake --preset custom-fast
-cmake --build --preset custom-fast --target RPSSDKExamplePlugins -- /m:1 /p:CL_MPCount=2
+cmake --build --preset custom-fast --config Release --target RPSSDKExamplePlugins -- /m:1 /p:CL_MPCount=2
 ctest --preset custom-fast -j 4
 ```
 
@@ -63,13 +63,8 @@ you are adapting.
 
 ## Runtime boundaries
 
-ROCK V1 has 99 function pointers (792 bytes on x64), including Power Armor
-classification, animated armor-hand queries, and specific-point grab commands, plus the separately
-discovered `GetROCKConfigurationApi` V1 export. PAPER V1 has 50 pointers
-(400 bytes). RPS UI has its own metadata-prefixed V1 table and eight functions.
-None of these version numbers describes the static RPS Framework library.
+ROCK exposes 13 families and 121 table members through `ROCKAPI_QueryInterfaceV1`. Hands and WeaponParts are 1.1; the remaining families are 1.0. Each family has its own permissions. PAPER retains 50 V1 calls with separate capabilities and a final-pose `PresentationComplete` event. RPS UI has three independently discovered tables: eight panel calls, six input calls and four cooperation/retirement calls.
 
-See [UI integration](SDK/UI/README.md), [ROCK configuration](SDK/ROCK/docs/Configuration.md),
-and [current interaction contracts](SDK/ROCK/docs/CurrentBehavior.md).
-SCISSORS and the wheel are consumers; they do not currently export a public
-provider table for inclusion here.
+See [ROCK](SDK/ROCK/README.md), [PAPER](SDK/PAPER/README.md), and [UI](SDK/UI/README.md). The monolithic ROCK headers/target remain legacy support only and cannot negotiate the current DLL. FRIK API 2.3 and the static RPS Framework package version are independent version domains.
+
+PALM owns a separate native section API in its own SDK. SCISSORS exports a limited development table whose actor-grab admission is disabled; there is no SDK/SCISSORS module. Neither is another ROCK family.

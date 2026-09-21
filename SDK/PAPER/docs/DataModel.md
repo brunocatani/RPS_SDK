@@ -6,7 +6,7 @@ an engine node, animation graph, clip, Havok body, or runtime allocation.
 ## Identity layers
 
 - `paperProviderGeneration` invalidates owner and callback assumptions after a
-  provider lifecycle reset.
+  shutdown/reinitialization, not an ordinary RuntimeReset event.
 - `worldGeneration`, `skeletonGeneration`, and `rockProviderGeneration`
   describe upstream runtime identity.
 - `weaponGenerationKey` invalidates all weapon-specific catalog and motion

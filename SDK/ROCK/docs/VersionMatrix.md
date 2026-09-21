@@ -1,28 +1,24 @@
-# API version matrix
+# ROCK interface versions
 
-This snapshot describes the current source ABI, checked 2026-09-11.
-A provider mod-version string alone does not establish support for newer V1 calls.
+| ID | Interface | Version | Public header | CMake target | Calls |
+| --- | --- | --- | --- | --- | --- |
+| 1 | [Core](modular/Core.md) | 1.0 | `ROCK/Core.h` | `RPS::ROCKCore` | 12 |
+| 2 | [Hands](modular/Hands.md) | 1.1 | `ROCK/Hands.h` | `RPS::ROCKHands` | 6 |
+| 3 | [Collision](modular/Collision.md) | 1.0 | `ROCK/Collision.h` | `RPS::ROCKCollision` | 12 |
+| 4 | [Grab](modular/Grab.md) | 1.0 | `ROCK/Grab.h` | `RPS::ROCKGrab` | 17 |
+| 5 | [Touch](modular/Touch.md) | 1.0 | `ROCK/Touch.h` | `RPS::ROCKTouch` | 6 |
+| 6 | [Weapon](modular/Weapon.md) | 1.0 | `ROCK/Weapon.h` | `RPS::ROCKWeapon` | 16 |
+| 7 | [WeaponParts](modular/WeaponParts.md) | 1.1 | `ROCK/WeaponParts.h` | `RPS::ROCKWeaponParts` | 18 |
+| 8 | [Animation](modular/Animation.md) | 1.0 | `ROCK/Animation.h` | `RPS::ROCKAnimation` | 9 |
+| 9 | [Input](modular/Input.md) | 1.0 | `ROCK/Input.h` | `RPS::ROCKInput` | 10 |
+| 10 | [References](modular/References.md) | 1.0 | `ROCK/References.h` | `RPS::ROCKReferences` | 3 |
+| 11 | [PlayerController](modular/PlayerController.md) | 1.0 | `ROCK/PlayerController.h` | `RPS::ROCKPlayerController` | 3 |
+| 12 | [Diagnostics](modular/Diagnostics.md) | 1.0 | `ROCK/Diagnostics.h` | `RPS::ROCKDiagnostics` | 6 |
+| 13 | [Configuration](modular/Configuration.md) | 1.0 | `ROCK/Configuration.h` | `RPS::ROCKConfiguration` | 3 |
 
-| API | Status | Binary contract | Current surface |
-| --- | --- | --- | --- |
-| V1 | Current | Append-only, 99 x64 function pointers / 792 bytes | Complete public hand, weapon, contact, input, animation, authority, command, scoped publication, touch-grab, raycast, guarded player-controller, reference details, Power Armor classification/point grabs, and diagnostic surface. |
 
-## Compatibility rules
+Negotiate exact major, minimum minor and the table byte extent independently for each family. Incompatible signatures, record layouts, units or ownership semantics require a new affected major. Append-only functions use the owning family's minor version. Do not extend existing V1 array element strides in place.
 
-`ROCK_PROVIDER_API_VERSION` remains `1` while new functions are appended and structures are prefix-extended. A V1 version match alone does not prove that a newer slot exists.
+Hands 1.1 adds physical firing/support role readback; WeaponParts 1.1 adds hierarchy paths. Core Presented and the current synchronized snapshot-read guarantees use the current matching header/runtime contracts; FRIK API 2.3 and mod/package release numbers are separate version domains.
 
-Consumers requiring a newer family should initialize with its named `ROCK_PROVIDER_API_V1_*_TABLE_BYTES` constant. Consumers supporting multiple provider revisions can initialize V1 without a minimum extent and then use `getProviderLimitsV1`/`getProviderLimitsExtV1` plus the inline `supports...V1` helpers.
-
-The safe descriptor is the only supported way to require a nonzero minimum table extent. Legacy provider-table discovery remains available for consumers that use only the original V1 prefix.
-
-Public structures carry `size`/`version` where extensibility requires it. Initialize structures with their default constructor, preserve zeroed reserved fields, and use `getPublicStructureSizeV1` when adapting to another header revision.
-
-## Provider and game versions
-
-The PA additions occupy slots 95–98 after the original 760-byte input-context
-boundary. Require `ROCK_PROVIDER_API_V1_POWER_ARMOR_TABLE_BYTES` and the relevant
-capability grants; an older V1 provider can load successfully while lacking this
-family. PA request/output structures currently require exact size/version;
-`getPublicStructureSizeV1` exposes their sizes for compatibility checks.
-
-The SDK provider mod version and the API version are separate values. The example F4SE plugins additionally gate FO4VR identity and `Fallout4VR.exe` file version `1.2.72.0`; they do not confuse that executable version with F4SEVR's loader compatibility runtime.
+A legacy header or a matching major number alone cannot make a monolithic consumer compatible with the modular runtime. See [migration](modular/Migration.md).

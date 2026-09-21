@@ -25,3 +25,7 @@ the correct include directory; it does not add a runtime dependency or install
 ## Current source behavior
 
 See [CurrentBehavior.md](docs/CurrentBehavior.md) for the source-verified interaction and compatibility changes as of 2026-09-11.
+
+## Current observation timing
+
+The public table remains V1 with 50 calls. Final native-pose data is published on `PresentationComplete`, separate from the earlier `FrameComplete` control/lease boundary. See [runtime and registration lifetime](docs/RuntimeContract.md). Current PAPER consumes the modular ROCK API; a PAPER-only consumer still includes only PAPER-owned headers.

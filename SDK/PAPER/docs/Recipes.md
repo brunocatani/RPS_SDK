@@ -56,3 +56,7 @@ short lease for exact animation harvest, motion compilation and the desired
 cache access. Read state periodically, surface denied bits to the developer,
 and clear immediately when the session closes. The user's INI remains the
 authority.
+
+## Final native-pose observations
+
+Request `NativePosePipeline` and `FrameCallbacks`; handle `PaperEventKindV1::PresentationComplete` before querying final native-pose frame and hand solutions. `FrameComplete` is the earlier control/lease boundary. The presentation event does not advance leases. Inspect validity, frame and generation identity before using residuals or finger transforms.

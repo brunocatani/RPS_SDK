@@ -1,6 +1,8 @@
 # Buildable example plugins
 
-These examples are intentionally small FO4VR F4SE plugins. Each target uses the shipped public header only, negotiates the exact capability set it needs, runs frame-sensitive work inside an owner callback, and unregisters its owner on session teardown.
+These examples are intentionally small FO4VR F4SE plugins. Each target includes the public feature headers it uses and negotiates independent interface majors and permissions, runs frame-sensitive work inside an owner callback, and unregisters its owner on session teardown.
+
+These examples target the [current ROCK modular API](../docs/modular/Overview.md). Each example owns its `onConnect` function and typed feature tables; the shared runtime owns Core registration and callback teardown.
 
 They are teaching projects, not production mods. Copy one target, rename its plugin definition, then add configuration and user-facing behavior appropriate to your mod.
 
@@ -12,7 +14,7 @@ They are teaching projects, not production mods. Copy one target, rename its plu
 | `ROCKSDKWeaponInspector` | Equipped-weapon generations, composition, part-pose readback, and scope state. |
 | `ROCKSDKSurfaceClimber` | Two independent wildcard `FixedAnchor` targets for left/right surface grabs, rolling leases, lifecycle guards, and state polling. |
 | `ROCKSDKContactVisualizer` | Semantic finger/hand contacts, player-collider discovery, and bounded debug-overlay publication. |
-| `ROCKSDKCapabilityReporter` | Base/extended limits, feature words, table extent, and public structure-size discovery. |
+| `ROCKSDKCapabilityReporter` | Independent interface discovery, supported major/minor versions and table extents. |
 | `ROCKSDKInputChordLease` | Fresh raw-button sampling, a two-button offhand chord, narrow suppression leases, and effective-state observability. |
 | `ROCKSDKWeaponCatalogDumper` | Weapon classification, the complete evidence catalog, record identity, semantic roles, and emitters. |
 | `ROCKSDKMuzzleRayVisualizer` | Equipped muzzle state, bounded world raycasts, hit normals, and leased overlay lines. |
@@ -45,7 +47,7 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
 cmake --build build --config Release -- /m:1 /p:CL_MPCount=2
 ```
 
-The loader check runs during configuration and fails if the shared bootstrap loses the FO4VR identity/executable gate or compares the F4SE loader runtime with a VR executable-version constant.
+The shared bootstrap verifies FO4VR executable identity. The behavior tests inspect DLL exports and exercise the actual opt-in example cleanup paths with typed provider fixtures.
 
 ## Runtime behavior
 
@@ -54,7 +56,7 @@ All examples require:
 - Fallout4VR.exe `1.2.72.0`;
 - a working F4SEVR installation;
 - `ROCK.dll` loaded in the same process;
-- the capability and table extent named by the example.
+- the modular interface majors, minors and permissions acquired by the example.
 
 Logs are written to the normal Fallout 4 VR F4SE log directory under each target name. Build the aggregate `ROCKSDKExamplePlugins` target to compile the full catalog, or build one named target while developing a specific pattern.
 

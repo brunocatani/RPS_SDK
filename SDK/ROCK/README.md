@@ -1,51 +1,24 @@
-# ROCK SDK
+# ROCK modular SDK
 
-ROCK SDK V1 is the public in-process C++ ABI for FO4VR F4SE plugins that need coherent access to ROCK's hand, collision, weapon, input, animation, interaction, and diagnostic systems.
+ROCK exposes physical interaction through **13 independently negotiated interfaces**. It remains one DLL and one runtime. Your plugin registers one owner, binds only the families and permissions it needs, and reads copied state or issues bounded requests.
 
-The current append-only V1 table contains 99 function slots. It supports read-only observation, owner-scoped registration, queued interaction commands, bounded control authorities, scoped publications, semantic contact streams, touch mechanisms, raycasts, guarded player-controller access, Power Armor classification and animated hand-point grabs, and shared VR diagnostics without exposing private ROCK runtime classes.
-
-## Start here
-
-1. Read `docs/GettingStarted.md` and integrate `include/ROCKProviderApi.h`.
-2. Read `docs/RuntimeContract.md` before calling any frame-sensitive or stateful surface.
-3. Choose only the capabilities your mod needs from `docs/DiscoveryAndCapabilities.md`.
-4. Use `docs/ApiIndex.md` for the exact 99-slot map and `docs/FeatureGuide.md` for task-oriented guidance.
-5. Build or adapt one of the generic plugins under `examples/`.
-
-## Package map
-
-| Path | Contents |
+| Start here | What you get |
 | --- | --- |
-| `include/ROCKProviderApi.h` | Canonical public V1 declarations, values, table guards, discovery helper, and support helpers. |
-| `include/ROCKApi.h` | Alias header for the same provider table/version. |
-| `include/ROCKConfigurationApi.h` | Separate catalog/revision/write export. |
-| `docs/PublicApi.md` | Architectural overview and API-family map. |
-| `docs/GettingStarted.md` | Initialization, result codes, registration, callbacks, and teardown. |
-| `docs/RuntimeContract.md` | Threading, lifecycle, generation, pointer, lease, cursor, and command rules. |
-| `docs/DiscoveryAndCapabilities.md` | Descriptor, table extent, 30 capabilities, two feature words, and limits. |
-| `docs/ApiIndex.md` | Every V1 function pointer in ABI slot order. |
-| `docs/FeatureGuide.md` | What users can build with each subsystem. |
-| `docs/Recipes.md` | Focused call patterns for common integrations. |
-| `docs/VersionMatrix.md` | API/provider compatibility policy. |
-| `examples/` | Seventeen buildable F4SE DLLs plus a compact integration fragment. |
+| [Install](docs/Install.md) | Explicit headers and CMake targets. |
+| [First consumer](docs/GettingStarted.md) | A complete final-hand observer with explicit teardown. |
+| [API index](docs/ApiIndex.md) | Every interface, current version, callable and public declaration. |
+| [Migration](docs/modular/Migration.md) | Move a monolithic consumer to the current contracts. |
+| [Runtime contract](docs/RuntimeContract.md) | Threads, callbacks, generations, leases and event streams. |
+| [Examples](docs/Examples.md) | Buildable SDK consumers and their purpose. |
 
-## ABI contract
+## Integration model
 
-The boundary is POD/value-oriented and C-exported from `ROCK.dll`. Consumers include only SDK headers, discover the table dynamically, and never link or reach into ROCK's private implementation.
+Resolve `ROCKAPI_QueryInterfaceV1` from the already-loaded `ROCK.dll`. `ROCK/Client.h` negotiates Core, registers your owner and acquires typed feature tables. The helper compiles into your plugin; it is not another runtime or an import library. Public calls execute inside ROCK.
 
-V1 evolves by appending function pointers and extending structures through sized prefixes. `ROCK_PROVIDER_API_VERSION` therefore remains `1` while the table grows. Compatibility requires API version, table byte extent, feature support, and owner capability grant—not the version number alone.
+Core owns lifecycle and scheduling. Hands owns poses and physical firing roles. Grab owns occupancy and commands. Collision owns bodies/contacts and raycasts. Touch owns mechanisms. Weapon and WeaponParts separate equipped state from part/source interaction. Animation owns pose authority; Input owns controller observation/suppression; References owns native-reference observation; PlayerController owns bounded controller state/jump access; Diagnostics owns overlays; Configuration owns the settings catalog and persistence.
 
-The authoritative signatures and enum values are in `ROCKProviderApi.h`. Documentation and examples are mechanically checked against that header, and example plugins are compiled in this standalone SDK's validation configuration.
+All families currently use major 1. Hands and WeaponParts use minor 1; the rest use minor 0. This is an intentional compatibility break from the previous provider. The old discovery exports are not fallback entry points into the current runtime.
 
-## Ownership in one paragraph
+## Scope
 
-Register with `registerConsumerV1`, retain the returned owner token for the current registration lifetime, and use it for every stateful call. Refresh leases only while active, clear feature state when it stops, unregister callbacks, then unregister the consumer. ROCK revokes remaining owner resources on unregister/provider loss, but deterministic cleanup is still the consumer's responsibility.
-
-## Current source behavior
-
-See [CurrentBehavior.md](docs/CurrentBehavior.md) for the source-verified interaction and compatibility changes as of 2026-09-11.
-
-The [Power Armor integration guide](docs/FeatureGuide.md#power-armor-and-reference-details)
-documents the current classification flags, frame identity, copied bone poses,
-command lifecycle, and native grip release. The complete consumer is
-[PowerArmorInteraction.cpp](examples/mods/PowerArmorInteraction.cpp).
+The API reference follows current local source as checked on 20 September 2026. Published download versions may differ. Negotiate the required interface and table extent in the installed DLL; a release name or build success cannot establish runtime support. The modular interface versions are independent of FRIK's API 2.3 and of the ROCK mod version.

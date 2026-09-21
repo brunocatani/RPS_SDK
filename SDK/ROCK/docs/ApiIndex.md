@@ -1,121 +1,103 @@
-# V1 function table index
+# Complete ROCK API index
 
-`RockProviderApi` is append-only. The x64 V1 table currently contains 99 function pointers (792 bytes). Slot order is ABI and is mechanically checked against this document.
+ROCK exposes **13 independently versioned interface families** through `ROCKAPI_QueryInterfaceV1`. Every family is currently major 1; Hands and WeaponParts are minor 1, all others minor 0. This is a compatibility break from the former monolithic provider. See the [migration guide](modular/Migration.md).
 
-The signature, enum values, structure defaults, flags, and inline support helpers in `ROCKProviderApi.h` are normative. This index explains intent and the principal gate; it does not replace the header.
+## Interface map
 
-| Slot | Function | Purpose |
-| ---: | --- | --- |
-| 0 | `getVersion` | Return the provider API version. |
-| 1 | `getModVersion` | Return the loaded ROCK mod version. |
-| 2 | `isProviderReady` | Report whether the provider currently has usable runtime state. |
-| 3 | `registerFrameCallback` | Register a legacy unowned frame callback. Prefer slot 56. |
-| 4 | `unregisterFrameCallback` | Remove a legacy frame callback. |
-| 5 | `getFrameSnapshot` | Copy the latest coherent frame/lifecycle snapshot. |
-| 6 | `queryWeaponContactAtPoint` | Query current weapon evidence near a game-space point. |
-| 7 | `clearExternalBodies` | Clear all external bodies owned by a token. |
-| 8 | `setOffhandInteractionReservation` | Set the legacy reservation state. Prefer leased slots 77–80. |
-| 9 | `registerExternalBodiesV1` | Replace the legacy per-owner external body set. |
-| 10 | `getWeaponEvidenceDetailCountV1` | Return the current detailed weapon-evidence count. |
-| 11 | `copyWeaponEvidenceDetailsV1` | Copy bounded weapon-evidence records. |
-| 12 | `getWeaponEvidenceDetailPointCountV1` | Return a weapon body's evidence point count. |
-| 13 | `copyWeaponEvidenceDetailPointsV1` | Copy a weapon body's local evidence point cloud. |
-| 14 | `getBodyContactSnapshotV1` | Copy recent player-body contact records. |
-| 15 | `getPrimaryHandV1` | Return the current primary hand. |
-| 16 | `getOffhandHandV1` | Return the current offhand. |
-| 17 | `getHandFrameV1` | Copy a root-flattened hand physics frame. |
-| 18 | `registerConsumerV1` | Register a named consumer and negotiate capabilities. |
-| 19 | `unregisterConsumerV1` | Revoke an owner and all of its resources. |
-| 20 | `getGrantedCapabilitiesV1` | Return the current granted mask for an owner. |
-| 21 | `getProviderLimitsV1` | Copy the stable limits/feature prefix. |
-| 22 | `getExternalContactSnapshotForOwnerV1` | Copy legacy owner-filtered external contacts. |
-| 23 | `requestForceGrabV1` | Queue a near force-grab command. |
-| 24 | `getInteractionCommandResultV1` | Poll an admitted command through its terminal result. |
-| 25 | `requestForceReleaseV1` | Queue a normal-path physical release. |
-| 26 | `requestThrownDropV1` | Queue a release using captured or supplied throw velocity. |
-| 27 | `setHandInputSuppressionV1` | Publish/refresh a per-hand input suppression lease. |
-| 28 | `clearHandInputSuppressionV1` | Clear the caller's suppression for one hand. |
-| 29 | `setWeaponPartTargetsV1` | Replace semantic weapon-part targets for an owner. |
-| 30 | `clearWeaponPartTargetsV1` | Clear the caller's part targets. |
-| 31 | `setWeaponPartDriveTargetsV1` | Replace bounded weapon-part drive publications. |
-| 32 | `clearWeaponPartDriveTargetsV1` | Clear the caller's weapon-part drives. |
-| 33 | `queryEquippedWeaponClassificationV1` | Copy equipped-weapon classification. |
-| 34 | `getWeaponPartGripStateV1` | Read active/resolved weapon-part grip state. |
-| 35 | `getRawWandButtonStateV1` | Read raw controller button/touch sample metadata. |
-| 36 | `isNativePipboyInputSuppressedV1` | Report effective native Pip-Boy suppression. |
-| 37 | `getWeaponEmitterCountV1` | Return the current emitter count. |
-| 38 | `copyWeaponEmittersV1` | Copy bounded muzzle/beam emitter snapshots. |
-| 39 | `setNativeAnimationAuthorityV1` | Acquire or refresh native animation authority. |
-| 40 | `clearNativeAnimationAuthorityV1` | Release native animation authority. |
-| 41 | `getNativeAnimationAuthorityStateV1` | Read authority ownership/lease state. |
-| 42 | `registerAnimationPhaseCallbackV1` | Subscribe an owner to animation phase callbacks. |
-| 43 | `unregisterAnimationPhaseCallbackV1` | Remove an animation phase callback. |
-| 44 | `getEquippedWeaponGripStateV1` | Read canonical grip, muzzle, and weapon-frame state. |
-| 45 | `setHandVisualAuthorityV1` | Publish/refresh hand and finger visual authority. |
-| 46 | `clearHandVisualAuthorityV1` | Clear visual authority for one hand. |
-| 47 | `publishNativeAnimationRuntimeV1` | Publish/refresh native animation runtime state. |
-| 48 | `setEquippedWeaponHandlingAuthorityV1` | Acquire/refresh equipped-weapon handling policy. |
-| 49 | `clearEquippedWeaponHandlingAuthorityV1` | Release handling authority. |
-| 50 | `getEquippedWeaponHandlingStateV1` | Read current handling ownership, policy, and lease. |
-| 51 | `publishDebugOverlayV1` | Publish bounded owner-scoped lines/text to ROCK's stereo overlay. |
-| 52 | `clearDebugOverlayV1` | Clear the caller's overlay publication. |
-| 53 | `getPresentedHandFrameV1` | Copy the currently presented hand frame after visual writers. |
-| 54 | `getProviderLimitsExtV1` | Prefix-copy the complete extensible limits and feature words. |
-| 55 | `getPublicStructureSizeV1` | Return ROCK's byte size for a public structure ID. |
-| 56 | `registerFrameCallbackForOwnerV1` | Register a game-thread frame callback bound to an owner. |
-| 57 | `unregisterFrameCallbackForOwnerV1` | Remove an owner-bound callback. |
-| 58 | `getHandInteractionStateV1` | Read coherent owner-filtered per-hand interaction state. |
-| 59 | `copyProviderEventsSinceV1` | Copy owner-filtered provider events after a sequence cursor. |
-| 60 | `getEquippedWeaponStateV1` | Read weapon transition identity and terminal state. |
-| 61 | `registerExternalBodiesForScopeV1` | Transactionally replace bodies in one owner scope. |
-| 62 | `clearExternalBodiesForScopeV1` | Clear one external body scope. |
-| 63 | `copyExternalContactsSinceV1` | Copy scoped enriched contacts after a sequence cursor. |
-| 64 | `queryWeaponPartTargetResolutionV1` | Resolve a semantic/matcher target to current weapon identity. |
-| 65 | `copyWeaponPartPoseSnapshotV1` | Copy current generated weapon-part poses. |
-| 66 | `copyWeaponPartDriveApplicationResultsV1` | Copy what the provider actually applied for part drives. |
-| 67 | `getScopeSightStateV1` | Read current sight bounds, anchor, body, and activation source. |
-| 68 | `getWeaponCompositionStateV1` | Read composition signature, counts, and coverage. |
-| 69 | `copyWeaponCompositionEntriesV1` | Copy installed composition entries. |
-| 70 | `getSelectedAuthoredGripPoseV1` | Read the selected authored two-hand/finger pose. |
-| 71 | `getPresentedHandPoseV1` | Read current presented hand and finger local transforms. |
-| 72 | `copySemanticHandContactsV1` | Copy semantic finger/hand contacts for one hand. |
-| 73 | `copyPlayerColliderDescriptorsV1` | Copy value descriptors for generated hand/body colliders. |
-| 74 | `getHandCollisionAvailabilityV1` | Read per-hand collision readiness and counts. |
-| 75 | `cancelInteractionCommandV1` | Cancel a caller-owned queued command when still cancellable. |
-| 76 | `getHandInputSuppressionStateV1` | Read caller and effective suppression/lease state. |
-| 77 | `acquireOffhandReservationV1` | Acquire a generation-bound offhand reservation lease. |
-| 78 | `renewOffhandReservationV1` | Refresh the caller's reservation lease. |
-| 79 | `releaseOffhandReservationV1` | Release the caller's leased reservation. |
-| 80 | `getOffhandReservationStateV1` | Read ownership, effective mode, expiry, and invalidation. |
-| 81 | `clearNativeAnimationRuntimeV1` | Clear the caller's native animation runtime publication. |
-| 82 | `setTouchGrabTargetsForScopeV1` | Transactionally replace fixed/hinge/prismatic touch targets in a scope. |
-| 83 | `clearTouchGrabTargetsForScopeV1` | Clear one touch-grab scope. |
-| 84 | `copyTouchGrabStatesForScopeV1` | Copy owner-scoped target phase/contact snapshots. |
-| 85 | `requestTouchGrabYieldV1` | Asynchronously yield a target before native/scripted motion. |
-| 86 | `requestEquippedWeaponHandV1` | ABI-preserved slot for the removed exact-hand feature; declines every request. |
-| 87 | `queryWorldRaycastV1` | Perform a bounded provider-filtered game-thread world raycast. |
-| 88 | `setColliderVisualizationOverrideV1` | Focus overlay visualization on one current weapon body. |
-| 89 | `clearColliderVisualizationOverrideV1` | Clear the caller's collider visualization focus. |
-| 90 | `getLogicalInputActionStateV1` | Read sequence-bearing semantic input state, currently the configured logical Jump action. |
-| 91 | `getPlayerControllerStateV1` | Read a pointer-free native player-controller snapshot with optional bounded penetration checking. |
-| 92 | `requestPlayerControllerJumpV1` | Request a generation-bound native controller jump after ROCK validates lifecycle and penetration state. |
-| 93 | `getRawWandThumbstickV1` | Read physical Axis0 before game-input suppression. Check the appended table boundary before calling; missing, stale, or menu-blocked samples return false and zero both outputs. |
-| 94 | `getNativeInputContextV1` | Frame-callback query for native menu ownership and primary ViewCaster activation priority. Zero means unavailable; check the appended table boundary. No input mutation or engine pointers. |
-| 95 | `getHandTargetDetailsV1` | Observe either hand: resolved reference, body/layer, anchor, mesh part and selected PA point. Requires TargetDetails; owner frame callback only. |
-| 96 | `queryReferenceInteractionV1` | Query native open state, activation blocking and furniture use, with independent availability. |
-| 97 | `queryPowerArmorTargetV1` | Classify PA furniture/actor, resolve its frame and copy animated armor-hand bone poses. Requires PowerArmor. |
-| 98 | `requestPowerArmorGrabV1` | Queue a specific armor-hand point grab. Requires PowerArmor and InteractionCommands; existing command result/cancel/release APIs apply. |
+| ID | Interface | Version | Public header | CMake target | Calls |
+| --- | --- | --- | --- | --- | --- |
+| 1 | [Core](modular/Core.md) | 1.0 | `ROCK/Core.h` | `RPS::ROCKCore` | 12 |
+| 2 | [Hands](modular/Hands.md) | 1.1 | `ROCK/Hands.h` | `RPS::ROCKHands` | 6 |
+| 3 | [Collision](modular/Collision.md) | 1.0 | `ROCK/Collision.h` | `RPS::ROCKCollision` | 12 |
+| 4 | [Grab](modular/Grab.md) | 1.0 | `ROCK/Grab.h` | `RPS::ROCKGrab` | 17 |
+| 5 | [Touch](modular/Touch.md) | 1.0 | `ROCK/Touch.h` | `RPS::ROCKTouch` | 6 |
+| 6 | [Weapon](modular/Weapon.md) | 1.0 | `ROCK/Weapon.h` | `RPS::ROCKWeapon` | 16 |
+| 7 | [WeaponParts](modular/WeaponParts.md) | 1.1 | `ROCK/WeaponParts.h` | `RPS::ROCKWeaponParts` | 18 |
+| 8 | [Animation](modular/Animation.md) | 1.0 | `ROCK/Animation.h` | `RPS::ROCKAnimation` | 9 |
+| 9 | [Input](modular/Input.md) | 1.0 | `ROCK/Input.h` | `RPS::ROCKInput` | 10 |
+| 10 | [References](modular/References.md) | 1.0 | `ROCK/References.h` | `RPS::ROCKReferences` | 3 |
+| 11 | [PlayerController](modular/PlayerController.md) | 1.0 | `ROCK/PlayerController.h` | `RPS::ROCKPlayerController` | 3 |
+| 12 | [Diagnostics](modular/Diagnostics.md) | 1.0 | `ROCK/Diagnostics.h` | `RPS::ROCKDiagnostics` | 6 |
+| 13 | [Configuration](modular/Configuration.md) | 1.0 | `ROCK/Configuration.h` | `RPS::ROCKConfiguration` | 3 |
 
-## Exports
+Each family reference includes every table member and the complete public declarations. [Shared types and results](modular/Abi.md) covers the common vocabulary. A repeated name such as `getSample` belongs to each table separately; there is no global slot numbering or global capability mask.
 
-The provider table has three discovery exports:
+## Callable index
 
-- `ROCKAPI_GetDescriptorV1`: preferred safe discovery path.
-- `ROCKAPI_GetProviderApi`: legacy provider-table accessor.
-- `ROCKAPI_GetApi`: alias returning the same table.
+### Core
 
-Consumers normally call `RockProviderApi::initialize` instead of resolving these manually.
+`getModVersion`, `isProviderReady`, `getFrameSnapshot`, `registerConsumerV1`, `unregisterConsumerV1`, `registerAnimationPhaseCallbackV1`, `unregisterAnimationPhaseCallbackV1`, `registerFrameCallbackForOwnerV1`, `unregisterFrameCallbackForOwnerV1`, `getSample`, `bindInterface`, `copyEvents`.
 
-`GetROCKConfigurationApi` is an independent V1 export with its own version/size
-checks and three configuration callbacks. It does not change the 99 provider
-slots. See [Configuration.md](Configuration.md).
+[Contract and signatures](modular/Core.md#entry-points).
+
+### Hands
+
+`getHandFrameV1`, `getPresentedHandFrameV1`, `getPresentedHandPoseV1`, `getSample`, `getHeadPose`, `getRoles`.
+
+[Contract and signatures](modular/Hands.md#entry-points).
+
+### Collision
+
+`clearExternalBodies`, `getBodyContactSnapshotV1`, `registerExternalBodiesForScopeV1`, `clearExternalBodiesForScopeV1`, `copyExternalContactsSinceV1`, `copySemanticHandContactsV1`, `copyPlayerColliderDescriptorsV1`, `getHandCollisionAvailabilityV1`, `queryWorldRaycastV1`, `getSample`, `getEnvironment`, `copyEvents`.
+
+[Contract and signatures](modular/Collision.md#entry-points).
+
+### Grab
+
+`requestForceGrabV1`, `getInteractionCommandResultV1`, `requestForceReleaseV1`, `requestThrownDropV1`, `getHandInteractionStateV1`, `cancelInteractionCommandV1`, `acquireOffhandReservationV1`, `renewOffhandReservationV1`, `releaseOffhandReservationV1`, `getOffhandReservationStateV1`, `getHandTargetDetailsV1`, `requestPowerArmorGrabV1`, `getSample`, `requestInventoryGrab`, `copyEvents`, `setEventCallback`, `clearEventCallback`.
+
+[Contract and signatures](modular/Grab.md#entry-points).
+
+### Touch
+
+`setTouchGrabTargetsForScopeV1`, `clearTouchGrabTargetsForScopeV1`, `copyTouchGrabStatesForScopeV1`, `requestTouchGrabYieldV1`, `getSample`, `copyEvents`.
+
+[Contract and signatures](modular/Touch.md#entry-points).
+
+### Weapon
+
+`getPrimaryHandV1`, `getOffhandHandV1`, `queryEquippedWeaponClassificationV1`, `getWeaponEmitterCountV1`, `copyWeaponEmittersV1`, `getEquippedWeaponGripStateV1`, `setEquippedWeaponHandlingAuthorityV1`, `clearEquippedWeaponHandlingAuthorityV1`, `getEquippedWeaponHandlingStateV1`, `getEquippedWeaponStateV1`, `getScopeSightStateV1`, `getWeaponCompositionStateV1`, `copyWeaponCompositionEntriesV1`, `getSelectedAuthoredGripPoseV1`, `getSample`, `copyEvents`.
+
+[Contract and signatures](modular/Weapon.md#entry-points).
+
+### WeaponParts
+
+`queryWeaponContactAtPoint`, `getWeaponEvidenceDetailCountV1`, `copyWeaponEvidenceDetailsV1`, `getWeaponEvidenceDetailPointCountV1`, `copyWeaponEvidenceDetailPointsV1`, `setWeaponPartTargetsV1`, `clearWeaponPartTargetsV1`, `setWeaponPartDriveTargetsV1`, `clearWeaponPartDriveTargetsV1`, `getWeaponPartGripStateV1`, `queryWeaponPartTargetResolutionV1`, `copyWeaponPartPoseSnapshotV1`, `copyWeaponPartDriveApplicationResultsV1`, `getSample`, `copySources`, `copyEvents`, `querySourcePose`, `querySourcePath`.
+
+[Contract and signatures](modular/WeaponParts.md#entry-points).
+
+### Animation
+
+`setNativeAnimationAuthorityV1`, `clearNativeAnimationAuthorityV1`, `getNativeAnimationAuthorityStateV1`, `setHandVisualAuthorityV1`, `clearHandVisualAuthorityV1`, `publishNativeAnimationRuntimeV1`, `clearNativeAnimationRuntimeV1`, `getSample`, `copyEvents`.
+
+[Contract and signatures](modular/Animation.md#entry-points).
+
+### Input
+
+`setHandInputSuppressionV1`, `clearHandInputSuppressionV1`, `getRawWandButtonStateV1`, `isNativePipboyInputSuppressedV1`, `getHandInputSuppressionStateV1`, `getLogicalInputActionStateV1`, `getRawWandThumbstickV1`, `getNativeInputContextV1`, `getSample`, `copyEvents`.
+
+[Contract and signatures](modular/Input.md#entry-points).
+
+### References
+
+`queryReferenceInteractionV1`, `queryPowerArmorTargetV1`, `getSample`.
+
+[Contract and signatures](modular/References.md#entry-points).
+
+### PlayerController
+
+`getPlayerControllerStateV1`, `requestPlayerControllerJumpV1`, `getSample`.
+
+[Contract and signatures](modular/PlayerController.md#entry-points).
+
+### Diagnostics
+
+`publishDebugOverlayV1`, `clearDebugOverlayV1`, `setColliderVisualizationOverrideV1`, `clearColliderVisualizationOverrideV1`, `getSample`, `copyEvents`.
+
+[Contract and signatures](modular/Diagnostics.md#entry-points).
+
+### Configuration
+
+`revision`, `visit`, `setValue`.
+
+[Contract and signatures](modular/Configuration.md#entry-points).

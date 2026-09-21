@@ -8,8 +8,7 @@ calls; older bool/count calls fail closed. Do not call PAPER from worker jobs,
 render callbacks, physics callbacks, destructors on unknown threads, or static
 object teardown.
 
-PAPER event callbacks execute on the owner thread. Event and callback pointers
-are valid only for the duration of the call. Copy any value needed later.
+PAPER event callbacks execute on the owner thread. The event record is borrowed only during the call; callback code and userdata remain owned by the consumer until successful unregistration. Copy values rather than event pointers.
 
 ## Failure behavior
 
@@ -44,3 +43,11 @@ your owned animation pipeline becomes unavailable.
 Development capture is always lease-only: requests must use 1 through 1200
 frames. See [DevelopmentCaptureAndStorage.md](DevelopmentCaptureAndStorage.md)
 before using it.
+
+## Control and final presentation
+
+`FrameComplete` remains the runtime/reload/motion control boundary and lease clock. Final native-pose observers request both `FrameCallbacks` and `NativePosePipeline` and query `getNativePoseFrameStateV1` / `getNativeHandSolutionV1` on `PresentationComplete = 11`. That event follows final-pose publication during ROCK Core `Presented` and does not advance leases again. Validate payload frame, generations and field validity.
+
+## Runtime reset versus registration lifetime
+
+A normal `RuntimeReset` clears authority, capture leases and observations but preserves registered owners and callbacks. Discard stale state and rearm deliberately. Provider shutdown/reinitialization clears registrations; reconnect when the owner is actually gone. Do not register a duplicate owner on every normal runtime reset.

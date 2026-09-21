@@ -26,8 +26,11 @@ publishes the header include path.
 
 ## Discover and register
 
+The following fragment belongs inside a game-thread initialization function returning `bool`; include the headers at file scope.
+
 ```cpp
 #include "PAPERApi.h"
+#include <cstdio>
 
 using namespace paper::api;
 
@@ -51,6 +54,9 @@ const auto result =
 if (result != PaperResultV1::Ok || handle.ownerToken == 0 ||
     (handle.grantedCapabilities & registration.requestedCapabilities) !=
         registration.requestedCapabilities) {
+    if (handle.ownerToken != 0) {
+        PaperApi::inst->unregisterConsumerV1(handle.ownerToken);
+    }
     return false;
 }
 ```
@@ -82,3 +88,5 @@ On the PAPER game thread:
 
 `unregisterConsumerV1` is the final owner cleanup boundary, but explicit clear
 calls make intent and runtime diagnostics unambiguous.
+
+Normal RuntimeReset clears leases/observations but retains owner registration. Final native-pose consumers subscribe to PresentationComplete with both NativePosePipeline and FrameCallbacks; see [runtime semantics](RuntimeContract.md).
