@@ -82,6 +82,7 @@ namespace rock::api::hands {
         static constexpr InterfaceId interfaceId=kInterfaceId;
         static constexpr std::uint32_t majorVersion=kMajor;
         static constexpr std::uint32_t minorVersion=kMinor;
+        // Any-thread copied control snapshot. Check Status, flags and generations.
         Status(ROCK_CALL* getHandFrameV1)(OwnerToken ownerToken, Hand hand, HandFrameV1* outFrame) noexcept;
         // Last completed presentation, with its capture frame/generations.
         // Early phases may return the preceding frame; before the first final
@@ -90,6 +91,7 @@ namespace rock::api::hands {
         Status(ROCK_CALL* getPresentedHandPoseV1)(std::uint64_t ownerToken, Hand hand, PresentedHandPoseV1* outPose) noexcept;
         // Family-local publication identity; compare before combining readbacks.
         Status(ROCK_CALL* getSample)(OwnerToken owner, SampleV1* outSample) noexcept;
+        // Any-thread copies; payload and SampleV1 identify the same publication.
         Status(ROCK_CALL* getHeadPose)(OwnerToken, HeadPoseV1*) noexcept;
         Status(ROCK_CALL* getRoles)(OwnerToken, RolesV1*) noexcept;
     };

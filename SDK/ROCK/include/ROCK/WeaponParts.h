@@ -361,6 +361,7 @@ namespace rock::api::weaponparts {
         Status(ROCK_CALL* clearWeaponPartTargetsV1)(std::uint64_t ownerToken) noexcept;
         Status(ROCK_CALL* setWeaponPartDriveTargetsV1)(std::uint64_t ownerToken, const WeaponPartDriveTargetV1* targets, std::uint32_t targetCount) noexcept;
         Status(ROCK_CALL* clearWeaponPartDriveTargetsV1)(std::uint64_t ownerToken) noexcept;
+        // Any-thread synchronized value snapshot, without live scene access.
         Status(ROCK_CALL* getWeaponPartGripStateV1)(OwnerToken ownerToken, Hand hand, WeaponPartGripStateV1* outState) noexcept;
         Status(ROCK_CALL* queryWeaponPartTargetResolutionV1)(std::uint64_t ownerToken, const WeaponPartResolutionQueryV1* query, WeaponPartResolutionResultV1* outResolution) noexcept;
         Status(ROCK_CALL* copyWeaponPartPoseSnapshotV1)(std::uint64_t ownerToken, WeaponPartPoseV1* outParts, std::uint32_t maxParts, std::uint32_t* outPartCount) noexcept;

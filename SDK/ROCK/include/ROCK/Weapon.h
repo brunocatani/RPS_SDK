@@ -449,6 +449,7 @@ namespace rock::api::weapon {
         Status(ROCK_CALL* setEquippedWeaponHandlingAuthorityV1)(std::uint64_t ownerToken, const EquippedWeaponHandlingRequestV1* request) noexcept;
         Status(ROCK_CALL* clearEquippedWeaponHandlingAuthorityV1)(std::uint64_t ownerToken) noexcept;
         Status(ROCK_CALL* getEquippedWeaponHandlingStateV1)(OwnerToken ownerToken, EquippedWeaponHandlingStateV1* outState) noexcept;
+        // Any-thread synchronized value snapshot; grants no mutation authority.
         Status(ROCK_CALL* getEquippedWeaponStateV1)(std::uint64_t ownerToken, EquippedWeaponStateV1* outState) noexcept;
         Status(ROCK_CALL* getScopeSightStateV1)(std::uint64_t ownerToken, ScopeSightStateV1* outState) noexcept;
         Status(ROCK_CALL* getWeaponCompositionStateV1)(std::uint64_t ownerToken, WeaponCompositionStateV1* outState) noexcept;

@@ -391,6 +391,7 @@ namespace rock::api::collision {
         Status(ROCK_CALL* queryWorldRaycastV1)(std::uint64_t ownerToken, const WorldRaycastRequestV1* request, WorldRaycastResultV1* outResult) noexcept;
         // Family-local publication identity; compare before combining readbacks.
         Status(ROCK_CALL* getSample)(OwnerToken owner, SampleV1* outSample) noexcept;
+        // Any-thread copy; payload and SampleV1 identify the same publication.
         Status(ROCK_CALL* getEnvironment)(OwnerToken, EnvironmentV1*) noexcept;
         Status(ROCK_CALL* copyEvents)(OwnerToken, std::uint64_t afterSequence, EventV1*, std::uint32_t capacity, StreamV1*) noexcept;
     };
