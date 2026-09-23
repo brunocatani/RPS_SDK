@@ -49,6 +49,10 @@ add_library(ROCKSDKMinimalConsumer OBJECT MinimalProviderConsumer.cpp)
 target_compile_features(ROCKSDKMinimalConsumer PRIVATE cxx_std_20)
 target_include_directories(ROCKSDKMinimalConsumer PRIVATE "${ROCK_SDK_ROOT}/include")
 add_dependencies(ROCKSDKExamplePlugins ROCKSDKMinimalConsumer)
+add_library(ROCKSDKInventoryWeaponEquip OBJECT InventoryWeaponEquip.cpp)
+target_compile_features(ROCKSDKInventoryWeaponEquip PRIVATE cxx_std_20)
+target_include_directories(ROCKSDKInventoryWeaponEquip PRIVATE "${ROCK_SDK_ROOT}/include")
+add_dependencies(ROCKSDKExamplePlugins ROCKSDKInventoryWeaponEquip)
 
 function(add_rock_sdk_example target_name source_path)
   add_library(${target_name} SHARED
