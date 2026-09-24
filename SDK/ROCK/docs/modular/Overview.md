@@ -8,4 +8,4 @@ Core owns registration, binding and lifecycle. Hands owns poses and physical fir
 
 The seven task-thread snapshot reads are documented in the runtime contract. Live scene queries and mutations retain their owner-thread restrictions. FRIK FrameBegin establishes that thread; NativeGraphOutput cannot claim it. Core Presented supplies final same-frame hand observation after FRIK world final, while Complete remains an earlier control boundary.
 
-All current families use major 1. Hands and WeaponParts use minor 1. These versions are independent from FRIK API 2.3, the ROCK mod version, and the SDK package version.
+All current families use major 1. Hands and WeaponParts use minor 1. [Weapon 1.1](WeaponV1_1.md) adds exact inventory equip into either hand, with the previous weapon retained in its carrying hand; the Weapon 1.0 prefix stays available. These versions are independent from FRIK API 2.3, the ROCK mod version, and the SDK package version.

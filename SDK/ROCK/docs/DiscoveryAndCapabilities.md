@@ -41,3 +41,9 @@ An acquisition failure leaves the output pointer null. Stop partially initialize
 ## Version domains
 
 All current interfaces are major 1. Hands 1.1 adds `getRoles`; WeaponParts 1.1 adds `querySourcePath`. Their full current table sizes are checked by the client. FRIK API 2.3, the ROCK DLL version, and SDK package version are independent numbers. Core `Presented` and PAPER `PresentationComplete` are current event/phase contracts; use current matching headers and runtimes rather than inferring them from an unrelated version string.
+
+## Compatible Weapon 1.1 discovery
+
+Include `ROCK/WeaponV1_1.h` and acquire `weapon::v1_1::Api` with Read + Write to negotiate major 1, minimum minor 1, and the extended table size. The original `weapon::ApiV1` remains a 1.0 request with its unchanged size and behavior; both consumer types can coexist without rebuilding old mods. The extension still requires Core 1.0. An older provider returns `UnsupportedMinor`; do not access the new slots.
+
+A committed [inventory switch](modular/WeaponV1_1.md) is ROCK-owned completion work, so owner unregister cannot roll it back or confiscate a retained player-held weapon. Uncommitted requests are cancelled; no consumer callback is kept for committed completion.

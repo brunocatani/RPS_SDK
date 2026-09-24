@@ -63,7 +63,7 @@ you are adapting.
 
 ## Runtime boundaries
 
-ROCK exposes 13 families and 121 table members through `ROCKAPI_QueryInterfaceV1`. Hands and WeaponParts are 1.1; the remaining families are 1.0. Each family has its own permissions. PAPER retains 50 V1 calls with separate capabilities and a final-pose `PresentationComplete` event. RPS UI has three independently discovered tables: eight panel calls, six input calls and four cooperation/retirement calls.
+ROCK exposes 13 families through `ROCKAPI_QueryInterfaceV1`. The base-contract map covers 121 table members; [Weapon 1.1](SDK/ROCK/docs/modular/WeaponV1_1.md) adds four inventory-equip calls, preserving the original 1.0 prefix. Both physical hands and retained weapon switching are supported. Hands and WeaponParts also have independently negotiated 1.1 contracts. Each family has its own permissions. PAPER retains 50 V1 calls with separate capabilities and a final-pose `PresentationComplete` event. RPS UI has three independently discovered tables: eight panel calls, six input calls and four cooperation/retirement calls.
 
 See [ROCK](SDK/ROCK/README.md), [PAPER](SDK/PAPER/README.md), and [UI](SDK/UI/README.md). The monolithic ROCK headers/target remain legacy support only and cannot negotiate the current DLL. FRIK API 2.3 and the static RPS Framework package version are independent version domains.
 

@@ -1,5 +1,7 @@
 # ROCK interface versions
 
+The table lists the contracts defined by the named base headers. Weapon also exposes the compatible 1.1 extension below; existing consumers may continue requesting its 1.0 prefix.
+
 | ID | Interface | Version | Public header | CMake target | Calls |
 | --- | --- | --- | --- | --- | --- |
 | 1 | [Core](modular/Core.md) | 1.0 | `ROCK/Core.h` | `RPS::ROCKCore` | 12 |
@@ -22,3 +24,9 @@ Negotiate exact major, minimum minor and the table byte extent independently for
 Hands 1.1 adds physical firing/support role readback; WeaponParts 1.1 adds hierarchy paths. Core Presented and the current synchronized snapshot-read guarantees use the current matching header/runtime contracts; FRIK API 2.3 and mod/package release numbers are separate version domains.
 
 A legacy header or a matching major number alone cannot make a monolithic consumer compatible with the modular runtime. See [migration](modular/Migration.md).
+
+Weapon additionally offers [minor 1.1](modular/WeaponV1_1.md) through `ROCK/WeaponV1_1.h`, preserving the complete 1.0 prefix, records and Core 1.0 requirement.
+
+| Compatible extension | Public header | CMake target | Appended / total calls |
+| --- | --- | --- | --- |
+| [Weapon 1.1](modular/WeaponV1_1.md) | `ROCK/WeaponV1_1.h` | `RPS::ROCKWeapon` | 4 / 20 |

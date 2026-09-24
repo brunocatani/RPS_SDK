@@ -13,7 +13,7 @@ Bind Weapon Read + Write and use `setEquippedWeaponHandlingAuthorityV1`, `getEqu
 | `GripZoneHoverHaptics` | Bounded equip-zone hover feedback policy. |
 | `FiringGripProximitySupport` | Leased firing-grip proximity support tuning. |
 
-These are the six implemented bits. Primary detach, handoff and grip-zone equip depend on firing-grip ownership. Retired shoulder-stash, Pip-Boy hand-equip and visual-bridge enable flags are absent from the current enum. Bridge correctness stays owned by ROCK. There is no exact-hand equip request; physical handoff changes firing roles without changing controller identities.
+These are the six implemented bits. Primary detach, handoff and grip-zone equip depend on firing-grip ownership. Retired shoulder-stash, Pip-Boy hand-equip and visual-bridge enable flags are absent from the current enum. Bridge correctness stays owned by ROCK. Weapon 1.0 has no exact-hand equip request; physical handoff changes firing roles without changing controller identities.
 
 Publish a nonzero bounded lease with finite tuning and current guards. Renew only while the activity owns the feature. Explicit clear, expiry, generation loss, owner loss and fault cleanup retire the policy. Inspect live state rather than treating a historical accepted publication as current authority.
 
@@ -42,3 +42,5 @@ Out-of-range or non-finite values reject the entire transaction.
 
 
 Exact request defaults and fields are in the [Weapon declarations](Weapon.md#types-flags-bounds-and-signatures). Initialize the request with `{}` and set a valid flag/lease explicitly; a default zero lease is not an active publication.
+
+Explicit inventory-to-hand equip and retained switching use the separately negotiated [Weapon 1.1 extension](WeaponV1_1.md); the handling lease above remains unchanged.

@@ -35,3 +35,9 @@ ctest --preset custom-fast -j 4
 ```
 
 The example plugins use C++23 and CommonLibF4VR. Header-only consumer targets use C++20. Build success checks compilation, not in-game behavior; do not install every example into a play setup. Exercise your selected feature's admission, generation change, lease and shutdown cases in its intended runtime environment.
+
+## Inventory equip into either hand
+
+[`InventoryWeaponEquip.h`](../examples/InventoryWeaponEquip.h) is a reusable C++20 helper that explicitly negotiates Weapon 1.1 and exposes `drawRight`, `drawLeft`, `poll` and `stop`. [`InventoryWeaponEquip.cpp`](../examples/InventoryWeaponEquip.cpp) shows both gesture entry points. These live directly under `SDK/ROCK/examples/` and compile as the inert `ROCKSDKInventoryWeaponEquip` object target; they do not deploy a plugin or detect holsters.
+
+Use the [inventory-equip contract](modular/WeaponV1_1.md) for exact stack selection, retained switching, result flags, cancellation and lifecycle cleanup.

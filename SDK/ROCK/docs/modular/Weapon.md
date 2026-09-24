@@ -1,12 +1,14 @@
 # Weapon API
 
+This page preserves the **Weapon 1.0 prefix**. [Weapon 1.1 inventory equip and retained switching](WeaponV1_1.md) appends four functions and supports explicit right- and left-hand requests. Negotiate that extension before using its added slots.
+
 Interface ID **6**, version **1.0**. Include `ROCK/Weapon.h`; link the header-only `RPS::ROCKWeapon` target. Namespace: `rock::api::weapon`. All table calls return `rock::api::Status`. Follow the [shared runtime contract](../RuntimeContract.md) and [discovery rules](../DiscoveryAndCapabilities.md).
 
 Weapon owns equipped identity, transition/terminal history, physical firing roles, classification, composition, emitters, scope state, authored grips, captured equipped grips and handling authority. Current equipped identity and historical terminal identity are deliberately separate fields.
 
 A captured equipped grip is not the complete occupancy answer. Native carry can occupy a hand without a captured ROCK grip. Read Grab for availability. Authored grip validity/source/provenance determines whether a pose is suitable for reuse; never assume a default transform is authored data.
 
-The handling lease preserves the six implemented controls in bits 0–5. Inert shoulder-stash, removed Pip-Boy hand-equip and redundant visual-bridge enable bits were retired. Existing bridge timeout/blend tuning remains bounded runtime tuning, while bridge correctness remains ROCK-owned. There is no programmatic exact-hand equip entry point in this interface. Physical handoff remains the way to change carry.
+The handling lease preserves the six implemented controls in bits 0–5. Inert shoulder-stash, removed Pip-Boy hand-equip and redundant visual-bridge enable bits were retired. Existing bridge timeout/blend tuning remains bounded runtime tuning, while bridge correctness remains ROCK-owned. The 1.0 prefix has no programmatic exact-hand equip entry point. Its physical handoff behavior is unchanged. Use the separately negotiated [Weapon 1.1 request](WeaponV1_1.md) to equip a selected inventory weapon into an explicit hand.
 
 Emitter and composition records are copied values tied to a weapon-generation key. Scope observation does not transfer ownership of native scope state or native shot handling.
 

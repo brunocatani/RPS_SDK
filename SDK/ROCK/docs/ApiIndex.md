@@ -1,8 +1,8 @@
 # Complete ROCK API index
 
-ROCK exposes **13 independently versioned interface families** through `ROCKAPI_QueryInterfaceV1`. Every family is currently major 1; Hands and WeaponParts are minor 1, all others minor 0. This is a compatibility break from the former monolithic provider. See the [migration guide](modular/Migration.md).
+ROCK exposes **13 independently versioned interface families** through `ROCKAPI_QueryInterfaceV1`. Every family is currently major 1. The base-contract map below follows each named header; compatible extensions are listed separately. Weapon 1.1 adds four calls while retaining the 1.0 header and table prefix. The earlier migration from the monolithic provider is separate from this compatible addition. See the [migration guide](modular/Migration.md).
 
-## Interface map
+## Base-contract map
 
 | ID | Interface | Version | Public header | CMake target | Calls |
 | --- | --- | --- | --- | --- | --- |
@@ -21,6 +21,17 @@ ROCK exposes **13 independently versioned interface families** through `ROCKAPI_
 | 13 | [Configuration](modular/Configuration.md) | 1.0 | `ROCK/Configuration.h` | `RPS::ROCKConfiguration` | 3 |
 
 Each family reference includes every table member and the complete public declarations. [Shared types and results](modular/Abi.md) covers the common vocabulary. A repeated name such as `getSample` belongs to each table separately; there is no global slot numbering or global capability mask.
+
+## Weapon 1.1 extension
+
+[Inventory equip and retained switching](modular/WeaponV1_1.md) adds
+`captureInventoryWeapon`, `requestInventoryEquip`, `getInventoryEquipResult`
+and `cancelInventoryEquip` through `ROCK/WeaponV1_1.h`. Its 20-slot table retains
+the original 16-slot Weapon prefix. `ROCK/Weapon.h` remains usable unchanged. The base contracts list 121 calls; this extension adds four, for 125 covered calls.
+
+| Provider | Minimum minor | Header and type | Appended calls | Total table calls |
+| --- | --- | --- | --- | --- |
+| Weapon | 1.1 | `ROCK/WeaponV1_1.h`, `weapon::v1_1::Api` | 4 | 20 |
 
 ## Callable index
 

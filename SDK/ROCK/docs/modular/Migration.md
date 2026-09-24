@@ -127,7 +127,7 @@ This table accounts for the 99 former slots. The destinations below identify the
 | 83 | clearTouchGrabTargetsForScopeV1 | Touch | Touch scoped clear and safe active-target retirement. |
 | 84 | copyTouchGrabStatesForScopeV1 | Touch | Touch state snapshots, epochs, contact/coordinate data and release reasons. |
 | 85 | requestTouchGrabYieldV1 | Touch | Touch asynchronous yield and restoration acknowledgement contract. |
-| 86 | requestEquippedWeaponHandV1 | Retire | Drop the already removed exact-hand feature; no dummy slot in new V1. |
+| 86 | requestEquippedWeaponHandV1 | Retire | The old exact-hand function stays retired. For a new inventory draw, explicitly negotiate Weapon 1.1 and use `requestInventoryEquip`; its new contract does not revive the old slot. |
 | 87 | queryWorldRaycastV1 | Collision | Collision bounded world raycast; preserve filtering and per-owner budget. |
 | 88 | setColliderVisualizationOverrideV1 | Diagnostics | Diagnostics focus by immutable weapon/body identity, not a Weapon DTO. |
 | 89 | clearColliderVisualizationOverrideV1 | Diagnostics | Diagnostics focus clear. |
@@ -159,3 +159,13 @@ Configuration is outside this 99-slot table:
 Use Hands 1.1 `getRoles` for physical firing/support assignments and WeaponParts 1.1 `querySourcePath` for hierarchy paths. Core `Complete` remains a control boundary; Core `Presented` supplies final same-frame hand observation after FRIK world final. PAPER observers needing that final pose use `PresentationComplete`, while `FrameComplete` retains control/lease semantics.
 
 [Current callable index](../ApiIndex.md) · [First consumer](../GettingStarted.md).
+
+## Opting into Weapon 1.1
+
+Existing Weapon 1.0 binaries and source using `ROCK/Weapon.h` need no migration.
+For explicit inventory equip into either physical hand, include
+`ROCK/WeaponV1_1.h` and acquire `weapon::v1_1::Api` with Read + Write. Negotiate
+minor 1 and the extended table size before touching the added slots. Use the
+[new contract and both hand examples](WeaponV1_1.md), and handle a terminal
+result instead of equipping again after queue admission. The released prefix,
+record layouts, Core requirement and old calls remain unchanged.

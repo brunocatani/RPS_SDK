@@ -16,7 +16,7 @@ WeaponParts enumerates a bounded source catalog, including nodes without generat
 
 World force-grab and inventory transfer have distinct requests. Power Armor attachment requires current reference/generation guards and a supported animated armor-hand point. Queue admission is not success: read command stage/outcome and current hand state. Native release may end a successful attachment later.
 
-Weapon handling exposes six implemented policy bits. The removed exact-hand equip request and retired inert handling flags are unavailable. Animation visual authority does not relocate physical hands; Collision registration does not allocate or transfer ownership of bodies.
+Weapon handling exposes six implemented policy bits. The old removed exact-hand request and retired inert handling flags remain unavailable in Weapon 1.0. The opt-in [Weapon 1.1 inventory operation](modular/WeaponV1_1.md) supports either physical hand and retained switching. Animation visual authority does not relocate physical hands; Collision registration does not allocate or transfer ownership of bodies.
 
 ## Configuration and consumers
 

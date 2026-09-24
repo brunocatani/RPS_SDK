@@ -38,7 +38,7 @@ All leases use the existing provider-publication boundary. A lease issued at pub
 
 ## Buffers and failures
 
-All calls return a fixed-width `Status`. Check the status before using outputs. `RequestQueued` is successful admission of a command, not successful execution. Use the returned command ID and Grab's result/state/stage readback to observe application or failure; cancellation can fail once a command is committed.
+All calls return a fixed-width `Status`. Check the status before using outputs. `RequestQueued` is successful admission of a command, not successful execution. Use the returned command ID with the owning family's result getter: Grab commands use its result/state/stage readback; Weapon 1.1 uses `getInventoryEquipResult`. Cancellation can fail once a command is committed.
 
 Records are frozen within their interface major. Initialize every sized input and output record with `{}`. Sized records require the exact current record size; records carrying a version require version 1. Initialize every sized element in output arrays as well. Capacities are element counts with the exact declared element stride, never byte counts. A capacity exceeding the published family maximum is rejected. A zero-capacity array can use a null data pointer, but required count/stream outputs must still be provided.
 
@@ -62,3 +62,9 @@ Legacy F4SE messages 100–105 and 200 are no longer emitted as the consumer tra
 ## Version compatibility
 
 Use exact major, minimum minor and table extent for each interface. Published records are fixed within their contract; never reinterpret a newer layout using an older header. Table discovery does not prove world readiness, a permission grant, or runtime qualification of an interaction. See [discovery](DiscoveryAndCapabilities.md) and [migration](modular/Migration.md).
+
+## Weapon 1.1 inventory commands
+
+All four [inventory-equip additions](modular/WeaponV1_1.md), including result polling, require the ROCK frame thread. They do not inherit the any-thread guarantee of `getEquippedWeaponStateV1`. Capture and request must use the same game frame and current nonzero lifecycle generations. Inventory keys are temporary opaque witnesses, never persistent item identifiers or native pointers.
+
+Before commitment, owner loss or cancellation retires the request. After outgoing removal or native equip, ROCK owns completion/recovery even if the requesting owner unregisters; it retains no consumer callback. The outgoing retained grab becomes player-owned. Results are owner-scoped, with the latest 64 terminal results retained across owners for this provider instance, separate from event-stream retention. On provider recreation or an evicted command, reconcile current inventory/hand state instead of replaying the draw.

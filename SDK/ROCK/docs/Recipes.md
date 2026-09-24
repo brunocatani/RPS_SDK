@@ -31,9 +31,9 @@ rock::api::Status readGrabEvents(
 
 Process only `stream.copiedCount` entries after `Ok`. `lostCount` requires rebuilding current state from snapshots; `remainingCount` permits another bounded batch on a later tick. Do not create an unbounded drain loop. Start the cursor at zero when a new owner is created. Synchronous Grab callbacks are an alternative observation path: copy the borrowed event and return without calling ROCK.
 
-## Inventory handoff
+## Consumable and throwable inventory handoff
 
-Bind Grab Read + Write. Queue only after your own explicit user action, with current nonzero world/skeleton/provider generations and a base-form ID. This request moves an eligible inventory item into a physical hand; it is separate from world force-grab and native equipment actions.
+Bind Grab Read + Write. Queue only after your own explicit user action, with current nonzero world/skeleton/provider generations and a base-form ID. This request moves a consumable or throwable weapon into an automatically selected available hand. Set `Hand::None`; it does not equip firearms. For a holstered firearm and explicit right/left selection, use [Weapon 1.1](modular/WeaponV1_1.md).
 
 ```cpp
 #include <ROCK/Core.h>
@@ -41,7 +41,7 @@ Bind Grab Read + Write. Queue only after your own explicit user action, with cur
 
 rock::api::Status queueInventoryItem(
     const rock::api::grab::ApiV1& grab, rock::api::OwnerToken owner,
-    const rock::api::core::SnapshotV1& frame, rock::api::Hand hand,
+    const rock::api::core::SnapshotV1& frame,
     std::uint32_t baseFormId, std::uint64_t& command) noexcept
 {
     command = 0;
@@ -51,7 +51,7 @@ rock::api::Status queueInventoryItem(
         !frame.worldGeneration || !frame.skeletonGeneration ||
         !frame.providerGeneration) return rock::api::Status::NotReady;
     rock::api::grab::InventoryGrabRequestV1 request{};
-    request.hand = hand;
+    request.hand = rock::api::Hand::None; // ROCK chooses an available hand.
     request.baseFormId = baseFormId;
     request.worldGeneration = frame.worldGeneration;
     request.skeletonGeneration = frame.skeletonGeneration;
@@ -61,6 +61,20 @@ rock::api::Status queueInventoryItem(
 ```
 
 Accept only `RequestQueued` as command admission. Poll `getInteractionCommandResultV1` until `Succeeded`, `Rejected` or `Cancelled`; inspect stage/failure details. Cancel pending work when its activity ends. A completed grab can become player-owned; do not release an unrelated manual grip during cleanup.
+
+## Holster draw and retained weapon switching
+
+Acquire `rock::api::weapon::v1_1::Api` with Weapon Read + Write. On the ROCK frame thread, capture the exact inventory stack and submit one request with `Hand::Right` or `Hand::Left`. Capture and submit in the same game frame. The existing weapon, if carried only by the other hand, becomes a retained physical grab there using Toggle Drop release controls.
+
+The [compiled helper](../examples/InventoryWeaponEquip.h) provides both calls after successful `connect(client)`:
+
+```cpp
+const auto admitted = drawingHandIsLeft
+    ? equip.drawLeft(weaponFormId, exactStackIndex)
+    : equip.drawRight(weaponFormId, exactStackIndex);
+```
+
+Accept `RequestQueued`, then call `equip.poll(result)` on later frame callbacks. Update holster state after `Succeeded`; on `Failed` or `Cancelled`, reconcile the result flags and actual item state before retrying. Do not also run the consumer's native equip. Call `equip.stop()` before closing its Core owner; `AlreadyCommitted` means ROCK owns the remaining cleanup. See the [complete 1.1 contract and both hand examples](modular/WeaponV1_1.md).
 
 ## Weapon sources and drives
 

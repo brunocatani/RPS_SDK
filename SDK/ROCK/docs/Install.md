@@ -30,3 +30,7 @@ Your plugin owns its F4SEVR bootstrap and runtime guard. Current ROCK integrates
 The SDK still contains legacy headers and `RPS::ROCK`; those do not negotiate this modular contract. `RPS::SDK` aggregates include paths for ROCK, PAPER and UI, but new modular code should name its family targets explicitly for language requirements and dependency clarity.
 
 Next: [first consumer](GettingStarted.md), then [runtime rules](RuntimeContract.md).
+
+## Opt into inventory equip
+
+For explicit right/left inventory equip and retained switching, link `RPS::ROCKWeapon` and include `ROCK/WeaponV1_1.h`. Request `weapon::v1_1::Api` through the SDK client; installing a header does not establish that the loaded DLL provides minor 1. Existing consumers using `ROCK/Weapon.h` remain on the compatible 1.0 prefix. See [the full integration](modular/WeaponV1_1.md).

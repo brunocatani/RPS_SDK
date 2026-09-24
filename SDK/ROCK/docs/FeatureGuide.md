@@ -5,7 +5,8 @@ Start with the runtime owner of the behavior. Bind Core Read for lifecycle obser
 | Feature | Interfaces | Boundary |
 | --- | --- | --- |
 | Hand/HMD observer | Hands Read | Final poses at Core Presented; validity and generations required. |
-| Pickup or inventory handoff | Grab Read + Write | Queue a command and observe its terminal state. |
+| World pickup or consumable/throwable inventory handoff | Grab Read + Write | Queue a command and observe its terminal state; inventory handoff chooses an available hand. |
+| Holster draw or inventory weapon switch | Weapon 1.1 Read + Write, Core scheduling | Capture the exact stack, choose the physical hand, and wait for the terminal result; retain an opposite-hand weapon with Toggle Drop controls. |
 | Climbing or physical controls | Touch Read + Write, Grab Read; Collision as needed | Scoped target leases and explicit clear/yield cleanup. |
 | Weapon inspection | Weapon and WeaponParts Read | Keep weapon-generation and source keys together. |
 | Part manipulation | WeaponParts Read + Write | Separate target matching, drive publication and application readback. |

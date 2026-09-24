@@ -25,3 +25,7 @@ Presented hand records retain their capture frame. In early phases they can be o
 Native nodes, references, worlds and Havok pointers do not cross these feature contracts. Source keys and body IDs must never be cast to pointers. Caller arrays remain caller-owned. Configuration strings and callback records are borrowed only during invocation. Copy the needed values into bounded storage and release all borrowed references before returning.
 
 Consult [shared declarations](modular/Abi.md) for exact primitive types and each [family reference](ApiIndex.md) for records, flags, bounds and function signatures.
+
+## Inventory weapon identity and command outcome
+
+[Weapon 1.1](modular/WeaponV1_1.md) keeps exact inventory selection separate from equipped observations. `InventoryWeapon` is a same-frame, generation-bound stack capture; `EquipRequest.hand` is a physical controller hand. `EquipResult` reports the command outcome and independent outgoing/incoming milestones. A terminal flag records what happened and does not replace a fresh Grab occupancy or Weapon identity snapshot.

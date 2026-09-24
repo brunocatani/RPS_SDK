@@ -10,6 +10,7 @@ ROCK exposes physical interaction through **13 independently negotiated interfac
 | [Migration](docs/modular/Migration.md) | Move a monolithic consumer to the current contracts. |
 | [Runtime contract](docs/RuntimeContract.md) | Threads, callbacks, generations, leases and event streams. |
 | [Examples](docs/Examples.md) | Buildable SDK consumers and their purpose. |
+| [Inventory equip and switching](docs/modular/WeaponV1_1.md) | Draw into either hand while retaining the other hand's weapon. |
 
 ## Integration model
 
@@ -17,7 +18,7 @@ Resolve `ROCKAPI_QueryInterfaceV1` from the already-loaded `ROCK.dll`. `ROCK/Cli
 
 Core owns lifecycle and scheduling. Hands owns poses and physical firing roles. Grab owns occupancy and commands. Collision owns bodies/contacts and raycasts. Touch owns mechanisms. Weapon and WeaponParts separate equipped state from part/source interaction. Animation owns pose authority; Input owns controller observation/suppression; References owns native-reference observation; PlayerController owns bounded controller state/jump access; Diagnostics owns overlays; Configuration owns the settings catalog and persistence.
 
-All families currently use major 1. Hands and WeaponParts use minor 1; the rest use minor 0. This is an intentional compatibility break from the previous provider. The old discovery exports are not fallback entry points into the current runtime.
+All families currently use major 1. Hands and WeaponParts use minor 1; Weapon additionally offers the compatible [1.1 inventory-equip extension](docs/modular/WeaponV1_1.md). The retained `ROCK/Weapon.h` contract is still 1.0. The earlier migration from the monolithic provider is separate from this compatible addition. The old discovery exports are not fallback entry points into the current runtime.
 
 ## Scope
 
