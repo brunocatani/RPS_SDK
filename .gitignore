@@ -1,6 +1,5 @@
 /build/
-/build-fast/
-/build-tests/
+/build-*/
 /.vs/
 /out/
 *.user
